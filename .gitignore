@@ -48,5 +48,6 @@ Thumbs.db
 *.wmv
 
 *.pptx
+*.txt
 
 .vscode/
