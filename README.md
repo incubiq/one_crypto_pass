@@ -13,9 +13,9 @@ This is currently a research project where Digital Identities and Verifiable Cre
 
 ## Links to videos
 
- - M1: Research + POC default solution: https://www.youtube.com/watch?v=Qajs70mdwa0
- - M1: Proof that Identus is fit for purpose: https://www.youtube.com/watch?v=4DyPuZr_3PA
- - M1: Conclusion / final chosen design: https://www.youtube.com/watch?v=3rv1MJzEXGY
+ - M1: Research + POC default solution: [16min video] https://www.youtube.com/watch?v=Qajs70mdwa0
+ - M1: Proof that Identus is fit for purpose: [30min video] https://www.youtube.com/watch?v=4DyPuZr_3PA
+ - M1: Conclusion / final chosen design: [11min video] https://www.youtube.com/watch?v=3rv1MJzEXGY
 
 
 ## Links to test scripts
