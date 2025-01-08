@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="{{ url_for('static', filename='js/app.js') }}" ></script>
+    <title>Encode</title>                
+</head>
+<body onload="loadUserDataIntoForm()">
+    <h1>Encode Text</h1>
+        <div>You are logged in as 
+            <b id="idDisplayUsername"></b>
+        </div>
+        <br />
+
+        <form action="/encode" method="post">
+            <label  style="display:block; margin-top:12px;" for="title">Name of the secret (not stored):</label>
+            <input type="text" id="title" name="title" required>
+
+            <label style="display:block; margin-top:12px;" for="secret">Your secret in plain text:</label>
+            <input type="text" id="secret" name="secret" required>
+
+            <label style="display:block; margin-top:12px;" for="condition">Condition:</label>
+            <input type="text" id="condition" name="condition" required>
+            
+            <input type="hidden" id="did" name="did" required>
+            <button style="display:block; margin-top:12px;" type="submit">Encode</button>
+        </form>
+    </body>
+    <br>
+    <br>
+      <ul>
+          <li><a href="/login">Login as User</a></li>
+          <li><a href="/encode">Encode a secret</a></li>
+          <li><a href="/decode">Decode a secret</a></li>
+      </ul>
+    </body>
+  </html>

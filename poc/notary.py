@@ -8,6 +8,8 @@ import base64
 import random
 import time
 
+import qrcode
+
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -236,6 +238,24 @@ class Sender:
             return None
         return decoded.decode('utf-8')
      
+    def generate_qrcode(self, secret, filename):
+        qr = qrcode.QRCode(
+            version=1,  # Version determines the size of the QR code
+            error_correction=qrcode.constants.ERROR_CORRECT_L,  # Error correction level
+            box_size=10,  # Size of each box in the QR code grid
+            border=4,  # Border size
+        )
+
+        # Add data to the QR Code
+        qr.add_data(secret)
+        qr.make(fit=True)
+
+        # Create an image of the QR Code
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Save the QR code to a file
+        img.save(filename)
+
 ## --------------
 ##    RECEIVER
 ## --------------
@@ -285,6 +305,8 @@ encoded_json=alice.encode_secret(secret, condition)                     ## alice
 encoded_condition=alice.get_encoded_condition(encoded_json["ts"])       ## alice's conditions are encoded so that noone can know those conditions (even the notary will not know)
 print("=> Encrypted Secret:", encoded_json["s"])
 
+alice.generate_qrcode("ocp:"+encoded_json["s"], "temp/qrcode.png")
+
 ## Alice does not need the notary to decode her secret
 decoded_by_alice=alice.decode_secret(encoded_json["s"], {
     "iterations": encoded_json["i"],
@@ -305,7 +327,7 @@ print("=> Decrypted Secret (condition not met):", decoded)
 
 ## Bob receives conditions from Alice, and tries to decode the secret once more. 
 ## In this simple example, Alice's notary will instantly accept this condition as "validated" 
-bob.set_encoded_condition(encoded_condition)            ##  Alice sents the conditions to BOB (later this can be a VC)
+bob.set_encoded_condition(encoded_condition)            ##  Alice sends the conditions to BOB (later this can be a VC)
 decoded = bob.decode_secret(encoded_json["s"], {
     "iterations": encoded_json["i"],
     "timestamp": encoded_json["ts"],
