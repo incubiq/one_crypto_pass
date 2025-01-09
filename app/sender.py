@@ -12,23 +12,44 @@ from notary import Notary
 
 
 class Sender:
-    def TOKEN_PASSPHRASE_FOR_SECRET (self): 
-        return "token4secret" 
-    def TOKEN_PASSPHRASE_FOR_CONDITION (self): 
-        return "token4condition" 
-    def TOKEN_SALT (self): 
-        return "token4salt" 
-    def SHA_PASSPHRASE (self): 
-        return 256
-    def SHA_SALT (self): 
-        return 512
+
+##
+## misc var inits
+##
+
     def __init__(self):
+        self.withVC=False                   ## True if we work with Verifiable Creds, False if not
         self.passphraseForSecret=None
         self.passphraseForCondition=None
         self.iterations=None
         self.notary = Notary()                              ## our notary
         self.encoder_decoder = EncoderDecoder()
         self.aSecretParam=[]         ## array of secret param  (timestamp, iterations, salt, encoded_condition)
+
+    def set_did(self, _did):
+        self.did=_did
+    
+    def get_notary(self):
+        return self.notary
+    
+    def TOKEN_PASSPHRASE_FOR_SECRET (self): 
+        return "token4secret" 
+    
+    def TOKEN_PASSPHRASE_FOR_CONDITION (self): 
+        return "token4condition" 
+    
+    def TOKEN_SALT (self): 
+        return "token4salt" 
+    
+    def SHA_PASSPHRASE (self): 
+        return 256
+    
+    def SHA_SALT (self): 
+        return 512
+
+##
+## generating passphrases and salts
+##
 
     def generate_passphrase(self, private_key: str) -> str:
         iterations = random.randint(1000000000,100000000000000)        ## a random iteration 
@@ -58,7 +79,20 @@ class Sender:
         if _sha==256:
             return hashlib.sha256(combined_data).hexdigest()
         return hashlib.sha512(combined_data).digest()
-            
+
+    def get_param_from_iteration(self, _i):
+        # Find the dictionary with the matching timestamp
+        result = None
+        for item in self.aSecretParam:
+            if item["iterations"] == _i:
+                result = item
+                break  # Exit the loop once the item is found
+        return result
+
+##
+## conditions
+##
+
     def set_condition(self, str_condition, iterations, salt):
         encoded_condition=self.encoder_decoder.encode(str_condition, {
                     "passphrase": self.passphraseForCondition,
@@ -75,25 +109,20 @@ class Sender:
             return None
         return item["encoded_condition"]
         
-    def set_did(self, _did):
-        self.did=_did
-    
-    def get_notary(self):
-        return self.notary
     
     def add_encoded_condition_to_iteration(self, _i, encoded_condition):
         item=self.get_param_from_iteration(_i)
         if item!= None:
             item["encoded_condition"]=encoded_condition
 
-    def get_param_from_iteration(self, _i):
-        # Find the dictionary with the matching timestamp
-        result = None
-        for item in self.aSecretParam:
-            if item["iterations"] == _i:
-                result = item
-                break  # Exit the loop once the item is found
-        return result
+    # use this to share condition with sender and receiver 
+    def share_condition(self, did, encoded_condition):
+        if self.withVC:
+            self.notary.share_condition(did, encoded_condition)
+
+##
+## secrets
+##
     
     def encode_secret(self, plain_text_secret, plain_text_condition):
         # we replaced the random salt with a derived token from priv key + iteration 
@@ -111,6 +140,9 @@ class Sender:
         #ask the notary to encode the condition (notary must be able to accept / refuse condition)
         encoded_condition=self.notary.encode_condition(self.did, plain_text_condition, self.iterations, self.passphraseForCondition) 
 
+        ## with VC? then we ask the Notary to issue a VC for ourself as sender (otherwise we will not be able to decode)
+        self.share_condition(self.did, encoded_condition)
+
         encoded=self.encoder_decoder.encode(plain_text_secret, {
             "passphrase": self.passphraseForSecret,
             "extra": encoded_condition,
@@ -118,12 +150,15 @@ class Sender:
             "salt" : self.salt 
         })
 
-        # generate QRCode secret + condition
-        objQRSecret=self.generate_qrcode({
+        # generate QRCode secret (+ condition if operating without VC)
+        qr={
             "s": encoded, 
-            "c": encoded_condition, 
             "i": self.iterations
-        })
+        }
+        if self.withVC==False:
+            qr["c"]=encoded_condition
+
+        objQRSecret=self.generate_qrcode(qr)
         return {
             "i": self.iterations,        ## in plain text
             "sa": self.salt,             ## the salt            
@@ -184,7 +219,11 @@ class Sender:
                 "decoded": None,
                 "isConditionPassed": False
             }
-    
+
+##
+## qrCodes
+##
+        
     def generate_qrcode(self, objS):
         qr = qrcode.QRCode(
             version=1,  # Version determines the size of the QR code

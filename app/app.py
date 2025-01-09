@@ -97,8 +97,12 @@ def post_share():
     objUser=gAuthenticator.authenticate(_username)
     objBob=gAuthenticator.authenticate("Bob")
     secret_i = request.form.get('secret_i', None)
+    secret_c = request.form.get('secret_c', None)
+
+    gSender.share_condition(objBob["did"], secret_c)
     secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
     gReceiver.set_passphrase(secret_pass)
+
     return render_template('shared_with.html')
 
 

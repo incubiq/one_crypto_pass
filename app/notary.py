@@ -91,7 +91,7 @@ class Notary:
             self.write_json_to_file()
 
 ##
-## encode/decode
+## encode/decode condition
 ##
 
     ## only notary can decode the encoded condition
@@ -139,10 +139,25 @@ class Notary:
                     "iterations": iterations,     
                     "salt" : salt 
                 })
+
                 return encoded_condition
             except Exception as e:
                 return None            
         return None
+    
+    def share_condition(self, did_receiver, encoded_condition) :
+        self.emitVC(did_receiver, encoded_condition)
+
+##
+## Verif Creds
+##
+
+    def emitVC(self, did, encoded_condition) :
+        return
+
+##
+## encode/decode secret
+##
 
     ## public decode_secret API that anyone can call into notary (maybe behing auth later?)
     def decode_secret(self, encoded, param):

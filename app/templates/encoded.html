@@ -15,6 +15,7 @@
         <h2>Share with someone?</h2>
         <form action="/share" method="post">
             <input type="hidden" id="secret_i" name="secret_i" value={{secret.i}} />
+            <input type="hidden" id="secret_c" name="secret_c" value={{secret.c}} />
             <input type="hidden" id="username" name="username" required>
             <label style="display:block; margin-top:12px;" for="condition">Share with:</label>
             <input type="text" id="sentto" name="sentto" value="Bob" required>
