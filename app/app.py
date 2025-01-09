@@ -97,7 +97,7 @@ def post_share():
     objUser=gAuthenticator.authenticate(_username)
     objBob=gAuthenticator.authenticate("Bob")
     secret_i = request.form.get('secret_i', None)
-    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), objUser["private"], secret_i)
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
     gReceiver.set_passphrase(secret_pass)
     return render_template('shared_with.html')
 
@@ -122,8 +122,9 @@ def post_decode_as_sender():
     secret_c = request.form.get('secret_c', None)
 
     # kept secretly by sender and receiver (via didcomm?? where stored?)
-    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), objUser["private"], secret_i)
-    secret_sa=gSender.get_unique_token(gSender.SHA_SALT(), objUser["private"], secret_i)
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
+    secret_passCond=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_CONDITION(), objUser["private"], secret_i)
+    secret_sa=gSender.get_unique_token(gSender.TOKEN_SALT(), objUser["private"], secret_i)
 
     decoded_json=None
     decoded_condition=None
@@ -133,7 +134,7 @@ def post_decode_as_sender():
         decoded_condition = gSender.decode_secret(secret_c, {
             "iterations": int(secret_i),
             "salt": secret_sa,
-            "passphrase": secret_pass,
+            "passphrase": secret_passCond,
             "encoded_condition": "condition"
         })        
 
@@ -166,6 +167,7 @@ def post_decode_as_receiver():
     secret_s = request.form.get('secret_s', None)
     secret_i = request.form.get('secret_i', None)
     secret_c = request.form.get('secret_c', None)
+    did_sender = request.form.get('did_sender', None)
 
     # kept receiver (via didcomm?? where stored?)
 
@@ -178,6 +180,7 @@ def post_decode_as_receiver():
             "notary": gSender.get_notary(),  
             "iterations": int(secret_i),
             "passphrase": gReceiver.get_passphrase(),
+            "did_sender": did_sender
         })
 
         if decoded_json["decoded"] == None:

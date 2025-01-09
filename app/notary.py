@@ -1,6 +1,6 @@
 ## ocp_notary
 
-from encoder import Encoder
+from encoder import EncoderDecoder
 import base64
 import json
 
@@ -9,7 +9,11 @@ file_path = 'notary.txt'
 class Notary:
     def __init__(self):
         self.aSecretParam=self.read_json_from_file()                    ## array of secret param  ## array of secret param  (timestamp, salt)
-        self.decoder = Encoder()                ## a decoder engine
+        self.encoder_decoder = EncoderDecoder()                ## a decoder engine
+
+##
+## DB
+##
 
     ## simulating our DB (txt file for now)
     def read_json_from_file(self):
@@ -37,19 +41,37 @@ class Notary:
         except Exception as e:
             print(f"Error writing to file {file_path}: {e}")
 
+##
+## keeping track of important data
+##
 
-    ## Notary can retrieve its salt for a particular timestamp
-    def _get_salt_for_iteration(self, _i):
+    ## Notary can check sender did for a particular iteration
+    def _check_did_for_iteration(self, _i, _did):
         result = None
         for item in self.aSecretParam:
             if item["iterations"] == _i:
                 result = item
                 break  # Exit the loop once the item is found
         if result==None:
+            return False
+        if result["did"]==_did:
+            return True
+        return False
+
+    def _get_item_for_iteration(self, _i):
+        for item in self.aSecretParam:
+            if item["iterations"] == _i:
+                return item
+        return None
+    
+    ## Notary can retrieve its salt for a particular iteration
+    def _get_salt_for_iteration(self, _i):
+        item=self._get_item_for_iteration(_i)
+        if item==None:
             return None
-        return base64.b64decode(result["salt"].encode('utf-8'))
+        return base64.b64decode(item["salt"].encode('utf-8'))
             
-    ## for each timestamp value, we keep a salt (at this stage, in memory only - store in DB later??)
+    ## for each iteration value, we keep the salt and did
     def set_salt_for_iteration(self, _did, _i, salt):
         if self._get_salt_for_iteration(_i) == None:
             self.aSecretParam.append({
@@ -62,20 +84,37 @@ class Notary:
         else: 
             print("=> Notary already aware of this salt = "+str(salt))
 
+    def add_passcond_to_iteration(self, _did, _i, _pass):
+        item=self._get_item_for_iteration(_i)
+        if item!=None:
+            item["passcond"]=_pass
+            self.write_json_to_file()
+
+##
+## encode/decode
+##
 
     ## only notary can decode the encoded condition
     def _decode_encoded_condition(self, encoded_condition, param):
         if encoded_condition==None:
             return None
-        decoded=self.decoder.decode(encoded_condition, {
-            "passphrase": param["passphrase"],
-            "extra": "condition",
-            "iterations": param["iterations"],            
-            "salt" : self._get_salt_for_iteration(param["iterations"]) 
-        })
-        if decoded==None:
+
+        # does the notary have recollection of this iteration for this did sender?        
+        if self._check_did_for_iteration(param["iterations"], param["did_sender"])==False:
             return None
-        return decoded.decode('utf-8')
+
+        item=self._get_item_for_iteration(param["iterations"])
+        if item!=None:
+            decoded=self.encoder_decoder.decode(encoded_condition, {
+                "passphrase": item["passcond"],
+                "extra": "condition",
+                "iterations": param["iterations"],            
+                "salt" : self._get_salt_for_iteration(param["iterations"]) 
+            })
+            if decoded==None:
+                return None
+            return decoded.decode('utf-8')
+        return None
     
     ## Notary can check if the condition os valid or not
     def _is_condition_valid(self, encoded_condition, param):
@@ -86,6 +125,25 @@ class Notary:
         ## TODO : really check if condition is met (for now we return True)
         return True
     
+    def encode_condition(self, did_sender, plain_text_condition, iterations, passphrase) :
+        ## based on the plain_text_condition, decide if we accept of not (at moment we accept all)
+        bIsConditionAccepted=True
+        bIsConditionAccepted=self._check_did_for_iteration(iterations, did_sender)
+        if bIsConditionAccepted:
+            try:
+                salt=self._get_salt_for_iteration(iterations)
+                self.add_passcond_to_iteration(did_sender, iterations, passphrase)
+                encoded_condition=self.encoder_decoder.encode(plain_text_condition, {
+                    "passphrase": passphrase,
+                    "extra" : "condition",
+                    "iterations": iterations,     
+                    "salt" : salt 
+                })
+                return encoded_condition
+            except Exception as e:
+                return None            
+        return None
+
     ## public decode_secret API that anyone can call into notary (maybe behing auth later?)
     def decode_secret(self, encoded, param):
         try:
@@ -98,7 +156,7 @@ class Notary:
                 }
 
             ## condition is met, notary can decode the secret
-            decoded=self.decoder.decode(encoded, {
+            decoded=self.encoder_decoder.decode(encoded, {
                 "passphrase": param["passphrase"],
                 "extra": param["encoded_condition"],
                 "iterations": param["iterations"],                 

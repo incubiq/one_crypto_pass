@@ -1,12 +1,9 @@
 ## ocp_receiver
 
-from encoder import Encoder
-
 class Receiver:
     def __init__(self):
         self.passphrase = None
         self.encoded_condition=None
-        self.decoder = Encoder()
 
     def set_passphrase(self, passphrase):
         print("=> Receiver passphrase set to = "+passphrase)
@@ -22,5 +19,6 @@ class Receiver:
         return param["notary"].decode_secret(encoded, {
             "passphrase": param["passphrase"],
             "encoded_condition": self.encoded_condition,
+            "did_sender": param["did_sender"],
             "iterations": param["iterations"],
         })

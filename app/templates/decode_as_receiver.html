@@ -6,6 +6,8 @@
         <h1>Decode someone else's Secret</h1>
 
         <form action="/decoded_as_receiver" method="post" onsubmit="onDecode(event)" id="formDecode">
+            <label style="display:block; margin-top:12px;"  for="did_sender">DID of Sender:</label>
+            <input type="text" id="did_sender" name="did_sender" required>
             <label style="display:block; margin-top:12px;"  for="secret">Secret:</label>
             <input type="text" id="secret" name="secret" required>
             <input type="hidden" id="secret_s" name="secret_s" required>

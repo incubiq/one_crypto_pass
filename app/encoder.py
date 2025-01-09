@@ -13,7 +13,7 @@ from cryptography.hazmat.backends import default_backend
 ## ENCODE/DECODE
 ## --------------
 
-class Encoder:
+class EncoderDecoder:
     def __init__(self):
         self.length=32
         

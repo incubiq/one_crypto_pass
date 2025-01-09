@@ -12,6 +12,8 @@
     if(eltUsername) {eltUsername.value = _username;}
     let eltDid=document.getElementById("did");
     if(eltDid) {eltDid.value = _did;}
+    let eltDidSender=document.getElementById("did_sender");
+    if(eltDidSender) {eltDidSender.value = _did;}
     let eltDisplayDid=document.getElementById("displayDid");
     if(eltDisplayDid) {eltDisplayDid.innerHTML = _did;}
   }

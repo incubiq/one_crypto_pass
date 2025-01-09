@@ -7,34 +7,52 @@ import base64
 import hashlib
 from io import BytesIO
 
-from encoder import Encoder
+from encoder import EncoderDecoder
 from notary import Notary
 
 
 class Sender:
+    def TOKEN_PASSPHRASE_FOR_SECRET (self): 
+        return "token4secret" 
+    def TOKEN_PASSPHRASE_FOR_CONDITION (self): 
+        return "token4condition" 
+    def TOKEN_SALT (self): 
+        return "token4salt" 
     def SHA_PASSPHRASE (self): 
         return 256
     def SHA_SALT (self): 
         return 512
     def __init__(self):
-        self.passphrase=None
+        self.passphraseForSecret=None
+        self.passphraseForCondition=None
         self.iterations=None
         self.notary = Notary()                              ## our notary
-        self.encoder = Encoder()
+        self.encoder_decoder = EncoderDecoder()
         self.aSecretParam=[]         ## array of secret param  (timestamp, iterations, salt, encoded_condition)
 
     def generate_passphrase(self, private_key: str) -> str:
-        iterations = random.randint(1000000000,1000000000000)        ## a random iteration 
+        iterations = random.randint(1000000000,100000000000000)        ## a random iteration 
         self.iterations = iterations
-        self.passphrase=self.get_unique_token(self.SHA_PASSPHRASE(), private_key, iterations)
-        self.salt=self.get_unique_token(self.SHA_SALT(), private_key, iterations)
+        self.passphraseForSecret=self.get_unique_token(self.TOKEN_PASSPHRASE_FOR_SECRET(), private_key, iterations)
+        self.passphraseForCondition=self.get_unique_token(self.TOKEN_PASSPHRASE_FOR_CONDITION(), private_key, iterations)
+        self.salt=self.get_unique_token(self.TOKEN_SALT(), private_key, iterations)
         print("=> Sender iterations set to = "+str(self.iterations))
-        print("=> Sender passphrase set to = "+self.passphrase)
+        print("=> Sender passphrase for Secret set to = "+self.passphraseForSecret)
         print("=> Sender salt set to = "+str(self.salt))
 
-    def get_unique_token(self, _sha, private_key: str, iteration)  -> str:
+    def get_unique_token(self, _type, private_key: str, iterations)  -> str:
+        if _type==self.TOKEN_PASSPHRASE_FOR_SECRET():
+            return self._get_unique_token(self.SHA_PASSPHRASE(), private_key, str(iterations))
+        if _type==self.TOKEN_PASSPHRASE_FOR_CONDITION():
+            first_8_digits = int(str(iterations)[:8])
+            return self._get_unique_token(self.SHA_PASSPHRASE(), private_key, str(first_8_digits)+"_conditions")
+        if _type==self.TOKEN_SALT():
+            return self._get_unique_token(self.SHA_SALT(), private_key, str(iterations))
+        return None
+
+    def _get_unique_token(self, _sha: int, private_key: str, _extra: str)  -> str:
         # Combine the private key and the big number as bytes
-        combined_data = (private_key + str(iteration)).encode('utf-8')
+        combined_data = (private_key + _extra).encode('utf-8')
         
         # Generate a unique token using SHA-256 / 512
         if _sha==256:
@@ -42,8 +60,8 @@ class Sender:
         return hashlib.sha512(combined_data).digest()
             
     def set_condition(self, str_condition, iterations, salt):
-        encoded_condition=self.encoder.encode(str_condition, {
-                    "passphrase": self.passphrase,
+        encoded_condition=self.encoder_decoder.encode(str_condition, {
+                    "passphrase": self.passphraseForCondition,
                     "extra" : "condition",
                     "iterations": iterations,     
                     "salt" : salt 
@@ -86,11 +104,15 @@ class Sender:
             "iterations": self.iterations,
             "salt": self.salt  
         })
-        self.notary.set_salt_for_iteration (self.did, self.iterations, self.salt)       ## share this salt with notary
-        encoded_condition=self.set_condition(plain_text_condition, self.iterations, self.salt)        ## get the encoded condition (will be shared with receiver)
 
-        encoded=self.encoder.encode(plain_text_secret, {
-            "passphrase": self.passphrase,
+        ## share did, iteration and salt with notary
+        self.notary.set_salt_for_iteration (self.did, self.iterations, self.salt)       
+
+        #ask the notary to encode the condition (notary must be able to accept / refuse condition)
+        encoded_condition=self.notary.encode_condition(self.did, plain_text_condition, self.iterations, self.passphraseForCondition) 
+
+        encoded=self.encoder_decoder.encode(plain_text_secret, {
+            "passphrase": self.passphraseForSecret,
             "extra": encoded_condition,
             "iterations": self.iterations,                 
             "salt" : self.salt 
@@ -105,7 +127,7 @@ class Sender:
         return {
             "i": self.iterations,        ## in plain text
             "sa": self.salt,             ## the salt            
-            "pass": self.passphrase, ## the shared passphrase            
+            "pass": self.passphraseForSecret, ## the shared passphrase            
             "s": encoded,           ## encoded secret
             "c": encoded_condition, ## the condition for decoding the secret
             "q": objQRSecret["qrcode"],   ## base64 qrcode image
@@ -133,7 +155,7 @@ class Sender:
                 if item and "salt" in item:
                     salt=item["salt"]
 
-            passphrase = self.passphrase
+            passphrase = self.passphraseForSecret
             if param and "passphrase" in param:
                 passphrase=param["passphrase"]
             else :
@@ -142,7 +164,7 @@ class Sender:
 
             # get the condition
 
-            decoded=self.encoder.decode(encoded, {
+            decoded=self.encoder_decoder.decode(encoded, {
                 "passphrase": passphrase,
                 "extra": encoded_condition,
                 "iterations": param["iterations"],                 
