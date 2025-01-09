@@ -10,7 +10,12 @@ from io import BytesIO
 from encoder import Encoder
 from notary import Notary
 
+
 class Sender:
+    def SHA_PASSPHRASE (self): 
+        return 256
+    def SHA_SALT (self): 
+        return 512
     def __init__(self):
         self.passphrase=None
         self.iterations=None
@@ -19,20 +24,23 @@ class Sender:
         self.aSecretParam=[]         ## array of secret param  (timestamp, iterations, salt, encoded_condition)
 
     def generate_passphrase(self, private_key: str) -> str:
-        iterations = random.randint(1,100000)        ## a random iteration 
+        iterations = random.randint(1000000000,1000000000000)        ## a random iteration 
         self.iterations = iterations
-        self.passphrase=self.get_passphrase(private_key, iterations)
+        self.passphrase=self.get_unique_token(self.SHA_PASSPHRASE(), private_key, iterations)
+        self.salt=self.get_unique_token(self.SHA_SALT(), private_key, iterations)
         print("=> Sender iterations set to = "+str(self.iterations))
         print("=> Sender passphrase set to = "+self.passphrase)
+        print("=> Sender salt set to = "+str(self.salt))
 
-    def get_passphrase(self, private_key: str, iteration)  -> str:
+    def get_unique_token(self, _sha, private_key: str, iteration)  -> str:
         # Combine the private key and the big number as bytes
         combined_data = (private_key + str(iteration)).encode('utf-8')
         
-        # Generate a unique token using SHA-256
-        token = hashlib.sha256(combined_data).hexdigest()
-        return token
-        
+        # Generate a unique token using SHA-256 / 512
+        if _sha==256:
+            return hashlib.sha256(combined_data).hexdigest()
+        return hashlib.sha512(combined_data).digest()
+            
     def set_condition(self, str_condition, iterations, salt):
         encoded_condition=self.encoder.encode(str_condition, {
                     "passphrase": self.passphrase,
@@ -70,21 +78,22 @@ class Sender:
         return result
     
     def encode_secret(self, plain_text_secret, plain_text_condition):
-        salt = os.urandom(32)                          ## a random salt that sender shares with Notary
+        # we replaced the random salt with a derived token from priv key + iteration 
+        # salt = os.urandom(32)                          ## a random salt that sender shares with Notary
 
         ## store the iteration / salt with this timestamp
         self.aSecretParam.append({
             "iterations": self.iterations,
-            "salt": salt  
+            "salt": self.salt  
         })
-        self.notary.set_salt_for_iteration (self.did, self.iterations, salt)       ## share this salt with notary
-        encoded_condition=self.set_condition(plain_text_condition, self.iterations, salt)        ## get the encoded condition (will be shared with receiver)
+        self.notary.set_salt_for_iteration (self.did, self.iterations, self.salt)       ## share this salt with notary
+        encoded_condition=self.set_condition(plain_text_condition, self.iterations, self.salt)        ## get the encoded condition (will be shared with receiver)
 
         encoded=self.encoder.encode(plain_text_secret, {
             "passphrase": self.passphrase,
             "extra": encoded_condition,
             "iterations": self.iterations,                 
-            "salt" : salt 
+            "salt" : self.salt 
         })
 
         # generate QRCode secret + condition
@@ -95,7 +104,7 @@ class Sender:
         })
         return {
             "i": self.iterations,        ## in plain text
-            "sa": salt,             ## the salt            
+            "sa": self.salt,             ## the salt            
             "pass": self.passphrase, ## the shared passphrase            
             "s": encoded,           ## encoded secret
             "c": encoded_condition, ## the condition for decoding the secret
@@ -105,43 +114,55 @@ class Sender:
         }
     
     def decode_secret(self, encoded, param):
-        item=self.get_param_from_iteration(param["iterations"])
-        if item== None and param["salt"]==None:
-            return None
-        
-        encoded_condition = None
-        if param and "encoded_condition" in param:
-            encoded_condition=param["encoded_condition"]
-        else :
-            if item and "encoded_condition" in item:
-                encoded_condition=item["encoded_condition"]
+        try:
+            item=self.get_param_from_iteration(param["iterations"])
+            if item== None and param["salt"]==None:
+                raise Exception("No incoming params") 
+            
+            encoded_condition = None
+            if param and "encoded_condition" in param:
+                encoded_condition=param["encoded_condition"]
+            else :
+                if item and "encoded_condition" in item:
+                    encoded_condition=item["encoded_condition"]
 
-        salt = None
-        if param and "salt" in param:
-            salt=param["salt"]
-        else :
-            if item and "salt" in item:
-                salt=item["salt"]
+            salt = None
+            if param and "salt" in param:
+                salt=param["salt"]
+            else :
+                if item and "salt" in item:
+                    salt=item["salt"]
 
-        passphrase = self.passphrase
-        if param and "passphrase" in param:
-            passphrase=param["passphrase"]
-        else :
-            if item and "passphrase" in item:
-                passphrase=item["passphrase"]
+            passphrase = self.passphrase
+            if param and "passphrase" in param:
+                passphrase=param["passphrase"]
+            else :
+                if item and "passphrase" in item:
+                    passphrase=item["passphrase"]
 
-        # get the condition
+            # get the condition
 
-        decoded=self.encoder.decode(encoded, {
-            "passphrase": passphrase,
-            "extra": encoded_condition,
-            "iterations": param["iterations"],                 
-            "salt" : salt
-        })
-        if decoded==None:
-            return None
-        return decoded.decode('utf-8')
-     
+            decoded=self.encoder.decode(encoded, {
+                "passphrase": passphrase,
+                "extra": encoded_condition,
+                "iterations": param["iterations"],                 
+                "salt" : salt
+            })
+            if decoded==None:
+                raise Exception("Could not decode") 
+            
+            return {
+                "decoded": decoded.decode('utf-8'),
+                "isConditionPassed": True
+            }
+                
+        except Exception as e:
+            return {
+                "error": e,
+                "decoded": None,
+                "isConditionPassed": False
+            }
+    
     def generate_qrcode(self, objS):
         qr = qrcode.QRCode(
             version=1,  # Version determines the size of the QR code

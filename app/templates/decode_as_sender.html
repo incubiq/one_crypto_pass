@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="{{ url_for('static', filename='js/app.js') }}" ></script>
-    <title>Decode</title>                
+    <title>Decode as Sender</title>                
 </head>
     <body onload="loadUserDataIntoForm()">
         <h1>Decode your own Secret</h1>
@@ -13,7 +13,7 @@
         </div>
         <br />
 
-        <form action="/decode" method="post" onsubmit="onDecode(event)" id="formDecode">
+        <form action="/decoded_as_sender" method="post" onsubmit="onDecode(event)" id="formDecode">
             <label for="secret">Secret:</label>
             <input type="text" id="secret" name="secret" required>
             <input type="hidden" id="username" name="username" required>
@@ -28,7 +28,8 @@
       <ul>
           <li><a href="/login">Login as User</a></li>
           <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode">Decode a secret</a></li>
+          <li><a href="/decode_as_sender">Decode my own secret </a></li>
+          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
       </ul>
     </body>
   </html>

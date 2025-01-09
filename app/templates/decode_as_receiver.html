@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="{{ url_for('static', filename='js/app.js') }}" ></script>
-    <title>Decode</title>                
+    <title>Decode as Receiver</title>                
 </head>
     <body onload="loadUserDataIntoForm()">
         <h1>Decode someone else's Secret</h1>
@@ -13,23 +13,25 @@
         </div>
         <br />
 
-        <form action="/decode" method="post" onsubmit="onDecode(event)" id="formDecode">
-            <label for="secret">Secret:</label>
+        <form action="/decoded_as_receiver" method="post" onsubmit="onDecode(event)" id="formDecode">
+            <label style="display:block; margin-top:12px;"  for="secret">Secret:</label>
             <input type="text" id="secret" name="secret" required>
+            <label style="display:block; margin-top:12px;" for="secret_pass">Passphrase received from sender:</label>
+            <input type="text" id="secret_pass" name="secret_pass" required>
             <input type="hidden" id="username" name="username" required>
             <input type="hidden" id="secret_s" name="secret_s" required>
             <input type="hidden" id="secret_sa" name="secret_sa" required>
             <input type="hidden" id="secret_i" name="secret_i" required>
             <input type="hidden" id="secret_c" name="secret_c" required>
-            <input type="hidden" id="secret_pass" name="secret_pass" required>
-            <button type="submit">Decode</button>
+            <button style="display:block; margin-top:12px;" type="submit">Decode</button>
         </form>
     <br>
     <br>
       <ul>
           <li><a href="/login">Login as User</a></li>
           <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode">Decode a secret</a></li>
+          <li><a href="/decode_as_sender">Decode my own secret </a></li>
+          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
       </ul>
     </body>
   </html>

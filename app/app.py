@@ -89,12 +89,16 @@ def post_encode():
         "t": title                  # display title
     })
 
-@app.route('/decode')
-def decode():
+@app.route('/decode_as_sender')
+def decode_as_sender():
     return render_template('decode_as_sender.html')
 
-@app.route('/decode', methods=['POST'])
-def post_decode():
+@app.route('/decode_as_receiver')
+def decode_as_receiver():
+    return render_template('decode_as_receiver.html')
+
+@app.route('/decoded_as_sender', methods=['POST'])
+def post_decode_as_sender():
     _username = request.form.get('username', None)
     _did = request.form.get('did', None)
 
@@ -104,53 +108,82 @@ def post_decode():
     secret_c = request.form.get('secret_c', None)
 
     # kept secretly by sender and receiver (via didcomm?? where stored?)
-    secret_pass=gSender.get_passphrase("alice_private_key_of_did", secret_i)
-
-    # kept by sender and notary for decoding
-    secret_sa = request.form.get('secret_sa', None)
-
-    # Preprocess the string to replace single quotes with double quotes and add double quotes to keys
-    #secret = request.form.get('secret', None)
-    #secret = secret.replace("'", '"').replace("s:", '"s":').replace("i:", '"i":')
-    #objSecret = ast.literal_eval(secret)        # Convert to a dictionary
+    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), "alice_private_key_of_did", secret_i)
+    secret_sa=gSender.get_unique_token(gSender.SHA_SALT(), "alice_private_key_of_did", secret_i)
 
     decoded_json=None
     decoded_condition=None
 
     # user decode own secret?
-    if secret_sa :
+    try:
         decoded_condition = gSender.decode_secret(secret_c, {
             "iterations": int(secret_i),
-            "salt": base64.b64decode(secret_sa),
+            "salt": secret_sa,
             "passphrase": secret_pass,
             "encoded_condition": "condition"
         })        
 
         decoded_json = gSender.decode_secret(secret_s, {
             "iterations": int(secret_i),
-            "salt": base64.b64decode(secret_sa),
+            "salt": secret_sa,
             "passphrase": secret_pass,
             "encoded_condition": secret_c
         })        
-    else :   
-        if secret_pass:      
-            decoded_json = gReceiver.decode_secret(secret_s, {
-                "notary": gSender.get_notary(),  
-                "iterations": int(secret_i),
-                "encoded_condition": None,
-                "passphrase": secret_pass,
-            })
-        else :
-            return render_template('decoded.html', secret={
-                "encoded":  secret_s,
-                "decoded": "COULD NOT DECODE"
-            })
 
-    return render_template('decoded.html', secret={
-        "encoded":  secret_s,
-        "decoded": decoded_json,
-        "condition": decoded_condition
-    })
+        if decoded_json["decoded"] == None:
+            raise Exception("Could not decode") 
+        
+        return render_template('decoded.html', secret={
+            "encoded":  secret_s,
+            "decoded": decoded_json["decoded"],
+            "condition": decoded_condition["decoded"]
+        })
+    except Exception as e:
+        return render_template('decoded.html', secret={
+            "encoded":  secret_s,
+            "decoded": "COULD NOT DECODE"
+        })
+
+
+@app.route('/decoded_as_receiver', methods=['POST'])
+def post_decode_as_receiver():
+    _username = request.form.get('username', None)
+    _did = request.form.get('did', None)
+
+    # found in the QR code
+    secret_s = request.form.get('secret_s', None)
+    secret_i = request.form.get('secret_i', None)
+    secret_c = request.form.get('secret_c', None)
+
+    # kept receiver (via didcomm?? where stored?)
+    secret_pass=request.form.get('secret_pass', None)
+
+    decoded_json=None
+
+    # receiver decode sender secret
+    try:
+        gReceiver.set_encoded_condition(secret_c)
+        decoded_json = gReceiver.decode_secret(secret_s, {
+            "notary": gSender.get_notary(),  
+            "iterations": int(secret_i),
+            "passphrase": secret_pass,
+        })
+
+        if decoded_json["decoded"] == None:
+            raise Exception("Could not decode") 
+
+        return render_template('decoded.html', secret={
+            "encoded":  secret_s,
+            "decoded": decoded_json["decoded"],
+            "condition": "Fulfilled"
+        })
+    
+    except Exception as e:
+        return render_template('decoded.html', secret={
+            "encoded":  secret_s,
+            "decoded": "COULD NOT DECODE",
+            "condition": "NOT YOUR BUSINESS"
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)  # Starts the server at http://127.0.0.1:5000

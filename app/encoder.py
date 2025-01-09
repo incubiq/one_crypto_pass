@@ -18,11 +18,15 @@ class Encoder:
         self.length=32
         
     def _getKeyFromParam (self, param):
+        # we take the first 5 digits of the large iteration 
+        large_number_str = str(param["iterations"])
+        first_5_digits = int(large_number_str[:5])
+
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=self.length,
             salt=param["salt"],
-            iterations=param["iterations"],
+            iterations=first_5_digits,
             backend=default_backend()
         )
 

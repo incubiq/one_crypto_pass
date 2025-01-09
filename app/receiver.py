@@ -20,8 +20,7 @@ class Receiver:
     
     def decode_secret(self, encoded, param):
         return param["notary"].decode_secret(encoded, {
-            "passphrase": self.passphrase,
+            "passphrase": param["passphrase"],
             "encoded_condition": self.encoded_condition,
             "iterations": param["iterations"],
-            "timestamp": param["timestamp"],
         })
