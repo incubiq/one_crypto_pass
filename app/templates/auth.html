@@ -1,27 +1,18 @@
 <!DOCTYPE html>
   <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome {{user.name}}</title>
-        <script src="{{ url_for('static', filename='js/app.js') }}" ></script>
-    </head>
+    {% include '_partial_head.html' %}
     <body onload='saveUserDataToLocalStore({
       "username": "{{user.name}}",
       "did": "{{user.did}}"
-    })'>
-          <h1>Welcome {{user.name}}</h1>
+    });  loadUserDataIntoForm()'>
+      {% include '_partial_header.html' %}
+      <h1>Welcome {{user.name}}</h1>
           <h2>Public address</h2>
           <span>{{user.addr}}</span>
           <h2>Digital Identity</h2>
           <span>{{user.did}}</span>
         <br>
         <br>
-        <ul>
-          <li><a href="/login">Login as User</a></li>
-          <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode_as_sender">Decode my own secret </a></li>
-          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
-      </ul>
-    </body>
-  </html>
+        {% include '_partial_footer.html' %}
+  </body>
+</html>

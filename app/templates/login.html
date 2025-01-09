@@ -1,26 +1,16 @@
 <!DOCTYPE html>
   <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login</title>                
-        <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    </head>
-    <body >
-          <h1>Login</h1>
+    {% include '_partial_head.html' %}
+    <body onload="loadUserDataIntoForm()">
+
+      {% include '_partial_header.html' %}
+      <h1>Login</h1>
           <form action="/auth" method="post" onsubmit="onLogin(event)" id="formLogin">
               <label for="username">Your name:</label>
               <input type="text" id="username" name="username" required>
               <input type="hidden" id="did" name="did" >
               <button type="submit">Login</button>
           </form>
-        <br>
-        <br>
-        <ul>
-          <li><a href="/login">Login as User</a></li>
-          <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode_as_sender">Decode my own secret </a></li>
-          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
-      </ul>
+        {% include '_partial_footer.html' %}
     </body>
-  </html>
+</html>

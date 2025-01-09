@@ -8,7 +8,7 @@ class Authenticator:
         return
         
     def authenticate(self, _user):
-        if (_user=="alice"): 
+        if (_user.lower()=="alice"): 
             return self.inMemBD.getAlice()
         return self.inMemBD.getBob()
     

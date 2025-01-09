@@ -69,6 +69,8 @@ def encode():
 
 @app.route('/encode', methods=['POST'])
 def post_encode():
+    _username = request.form.get('username', None)
+    objUser=gAuthenticator.authenticate(_username)
     _did = request.form.get('did', None)
     secret = request.form.get('secret', None)
     condition = request.form.get('condition', None)
@@ -76,7 +78,7 @@ def post_encode():
 
     # Encode the text
     gSender.set_did(_did)
-    gSender.generate_passphrase("alice_private_key_of_did")
+    gSender.generate_passphrase(objUser["private"])
     encoded_json = gSender.encode_secret(secret, condition)
     return render_template('encoded.html', secret={
         "sa": base64.b64encode(encoded_json["sa"]).decode('utf-8'),         # salt
@@ -88,6 +90,17 @@ def post_encode():
         "q": encoded_json["q"],     # qrcode
         "t": title                  # display title
     })
+
+@app.route('/share', methods=['POST'])
+def post_share():
+    _username = request.form.get('username', None)
+    objUser=gAuthenticator.authenticate(_username)
+    objBob=gAuthenticator.authenticate("Bob")
+    secret_i = request.form.get('secret_i', None)
+    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), objUser["private"], secret_i)
+    gReceiver.set_passphrase(secret_pass)
+    return render_template('shared_with.html')
+
 
 @app.route('/decode_as_sender')
 def decode_as_sender():
@@ -101,6 +114,7 @@ def decode_as_receiver():
 def post_decode_as_sender():
     _username = request.form.get('username', None)
     _did = request.form.get('did', None)
+    objUser=gAuthenticator.authenticate(_username)
 
     # found in the QR code
     secret_s = request.form.get('secret_s', None)
@@ -108,8 +122,8 @@ def post_decode_as_sender():
     secret_c = request.form.get('secret_c', None)
 
     # kept secretly by sender and receiver (via didcomm?? where stored?)
-    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), "alice_private_key_of_did", secret_i)
-    secret_sa=gSender.get_unique_token(gSender.SHA_SALT(), "alice_private_key_of_did", secret_i)
+    secret_pass=gSender.get_unique_token(gSender.SHA_PASSPHRASE(), objUser["private"], secret_i)
+    secret_sa=gSender.get_unique_token(gSender.SHA_SALT(), objUser["private"], secret_i)
 
     decoded_json=None
     decoded_condition=None
@@ -147,8 +161,6 @@ def post_decode_as_sender():
 
 @app.route('/decoded_as_receiver', methods=['POST'])
 def post_decode_as_receiver():
-    _username = request.form.get('username', None)
-    _did = request.form.get('did', None)
 
     # found in the QR code
     secret_s = request.form.get('secret_s', None)
@@ -156,7 +168,6 @@ def post_decode_as_receiver():
     secret_c = request.form.get('secret_c', None)
 
     # kept receiver (via didcomm?? where stored?)
-    secret_pass=request.form.get('secret_pass', None)
 
     decoded_json=None
 
@@ -166,7 +177,7 @@ def post_decode_as_receiver():
         decoded_json = gReceiver.decode_secret(secret_s, {
             "notary": gSender.get_notary(),  
             "iterations": int(secret_i),
-            "passphrase": secret_pass,
+            "passphrase": gReceiver.get_passphrase(),
         })
 
         if decoded_json["decoded"] == None:

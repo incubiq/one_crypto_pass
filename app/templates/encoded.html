@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="{{ url_for('static', filename='js/app.js') }}" ></script>
-    <title>Encoded Result</title>
-</head>
-    <body onload="saveSecretKeysToLocalStore()">
+    {% include '_partial_head.html' %}
+    
+    <body onload="loadUserDataIntoForm(); saveSecretKeysToLocalStore()">
+        {% include '_partial_header.html' %}
+
         <h1>{{secret.t}}</h1>
         <h2>Secret + condition</h2>
         <img src="data:image/png;base64,{{secret.q}}" alt="QR Code Secret">
+        <br>
         <span id="secret_e">{{secret.e}}</span>
         <br>
 
+        <h2>Share with someone?</h2>
+        <form action="/share" method="post">
+            <input type="hidden" id="secret_i" name="secret_i" value={{secret.i}} />
+            <input type="hidden" id="username" name="username" required>
+            <label style="display:block; margin-top:12px;" for="condition">Share with:</label>
+            <input type="text" id="sentto" name="sentto" value="Bob" required>
+            <button style="display:block; margin-top:12px;" type="submit">Share Now</button>
+        </form>
+
         <input type="hidden" id="secret_sa" value={{secret.sa}} />
-        <input type="hidden" id="secret_i" value={{secret.i}} />
         <input type="hidden" id="secret_c" value={{secret.c}} />
+
+        {% include '_partial_footer.html' %}
     </body>
-    <br>
-    <br>
-      <ul>
-          <li><a href="/login">Login as User</a></li>
-          <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode_as_sender">Decode my own secret </a></li>
-          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
-      </ul>
-    </body>
-  </html>
+</html>

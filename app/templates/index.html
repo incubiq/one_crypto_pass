@@ -1,18 +1,11 @@
 <!DOCTYPE html>
   <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome</title>                
-        <script src="app.js" defer></script> 
-    </head>
-    <body onload="loadFormData()">
+    {% include '_partial_head.html' %}
+    <body onload="loadUserDataIntoForm()">
+      {% include '_partial_header.html' %}
+      
       <h1>Welcome to OneCrypto Pass</h1> 
-      <ul>
-          <li><a href="/login">Login as User</a></li>
-          <li><a href="/encode">Encode a secret</a></li>
-          <li><a href="/decode_as_sender">Decode my own secret </a></li>
-          <li><a href="/decode_as_receiver">Decode a secret I received</a></li>
-      </ul>
+
+      {% include '_partial_footer.html' %}
     </body>
   </html>
