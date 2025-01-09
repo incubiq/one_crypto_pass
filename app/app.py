@@ -99,7 +99,12 @@ def post_share():
     secret_i = request.form.get('secret_i', None)
     secret_c = request.form.get('secret_c', None)
 
-    gSender.share_condition(objBob["did"], secret_c)
+    gSender.share_condition({
+        "fromDid": objBob["did"],
+        "toDid": objUser["did"],
+        "encoded_condition": secret_c,
+        "iteration": secret_i
+    })
     secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
     gReceiver.set_passphrase(secret_pass)
 
@@ -123,15 +128,12 @@ def post_decode_as_sender():
     # found in the QR code
     secret_s = request.form.get('secret_s', None)
     secret_i = request.form.get('secret_i', None)
-    secret_c = request.form.get('secret_c', None)
+    secret_c = request.form.get('secret_c', None)       ## if not in QR code, then found in VC
 
-    # kept secretly by sender and receiver (via didcomm?? where stored?)
+    # kept by sender (derived from priv key, does not need storage)
     secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
     secret_passCond=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_CONDITION(), objUser["private"], secret_i)
     secret_sa=gSender.get_unique_token(gSender.TOKEN_SALT(), objUser["private"], secret_i)
-
-    decoded_json=None
-    decoded_condition=None
 
     # user decode own secret?
     try:
@@ -170,12 +172,11 @@ def post_decode_as_receiver():
     # found in the QR code
     secret_s = request.form.get('secret_s', None)
     secret_i = request.form.get('secret_i', None)
-    secret_c = request.form.get('secret_c', None)
+    secret_c = request.form.get('secret_c', None)           ## if not in QR code, then found in VC
+
+    # known by the receiver
     did_sender = request.form.get('did_sender', None)
-
-    # kept receiver (via didcomm?? where stored?)
-
-    decoded_json=None
+    passphrase=gReceiver.get_passphrase(),
 
     # receiver decode sender secret
     try:
@@ -183,7 +184,7 @@ def post_decode_as_receiver():
         decoded_json = gReceiver.decode_secret(secret_s, {
             "notary": gSender.get_notary(),  
             "iterations": int(secret_i),
-            "passphrase": gReceiver.get_passphrase(),
+            "passphrase": passphrase,
             "did_sender": did_sender
         })
 

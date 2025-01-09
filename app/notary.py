@@ -145,14 +145,18 @@ class Notary:
                 return None            
         return None
     
-    def share_condition(self, did_receiver, encoded_condition) :
-        self.emitVC(did_receiver, encoded_condition)
+    def share_condition(self, objShare) :
+        self.emitVC(objShare)
 
 ##
 ## Verif Creds
 ##
 
-    def emitVC(self, did, encoded_condition) :
+    def emitVC(self, objShare) :
+        ## objShare.fromDid
+        ## objShare.toDid
+        ## objShare.encoded_condition
+        ## objShare.iteration
         return
 
 ##

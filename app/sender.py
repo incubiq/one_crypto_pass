@@ -116,9 +116,9 @@ class Sender:
             item["encoded_condition"]=encoded_condition
 
     # use this to share condition with sender and receiver 
-    def share_condition(self, did, encoded_condition):
+    def share_condition(self, objShare):
         if self.withVC:
-            self.notary.share_condition(did, encoded_condition)
+            self.notary.share_condition(objShare)
 
 ##
 ## secrets
@@ -141,7 +141,12 @@ class Sender:
         encoded_condition=self.notary.encode_condition(self.did, plain_text_condition, self.iterations, self.passphraseForCondition) 
 
         ## with VC? then we ask the Notary to issue a VC for ourself as sender (otherwise we will not be able to decode)
-        self.share_condition(self.did, encoded_condition)
+        self.share_condition({
+            "fromDid": self.did,
+            "toDid": self.did,
+            "encoded_condition": encoded_condition,
+            "iteration": self.iterations
+        })
 
         encoded=self.encoder_decoder.encode(plain_text_secret, {
             "passphrase": self.passphraseForSecret,
