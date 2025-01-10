@@ -22,27 +22,6 @@ class MyHandler(BaseHTTPRequestHandler):
     global gReceiver
     global gAuthenticator
 
-# App entry
-testSend=genKey()
-testReceive=genKey()
-objAlice=gInMemDB.getAlice()
-objBob=gInMemDB.getBob()
-
-msg=createMessage ({
-    "content": "hello world", 
-    "fromDid": objAlice["did"], 
-    "toDid": objBob["did"]})
-
-packed=async_packMessage({
-    "message": msg,
-    "fromDid": objAlice["did"], 
-    "toDid": objBob["did"]
-})
-
-unpacked=async_unpackMessage({
-    "message": packed
-})
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -57,8 +36,14 @@ def login():
 def auth():
     name = request.form.get('username', None)
     objAuth=gAuthenticator.authenticate(name)
-    gSender.set_user(objAuth)
+    isSender= objAuth["name"]=="Alice"
+    if isSender:
+        gSender.set_user(objAuth)
+    else:
+        gReceiver.set_user(objAuth)
+
     return render_template('auth.html', user={
+        "isSender": isSender,
         "name": objAuth["name"],
         "addr": objAuth["wallet"]["id"],
         "did": objAuth["did"]
@@ -87,18 +72,6 @@ def post_encode():
         return render_template('404.html', error={
             "message": "Could not encode secret"
         })
-    
-
-
-
-            # get offer record from holder point of view
-        return identus.simpleGet(objParam.key, "issue-credentials/records/"+dataRet["thid"]);
-
-        dataOfferedToHolder= async_getAllVCOffers({
-            key: objParam.keyPeer2,
-            thid: dataOfferByIssuer.data.thid
-        });
-
 
     return render_template('encoded.html', secret={
         "sa": base64.b64encode(encoded_json["sa"]).decode('utf-8'),         # salt
@@ -119,9 +92,9 @@ def post_share():
     secret_i = request.form.get('secret_i', None)
     secret_c = request.form.get('secret_c', None)
 
-    gSender.share_condition({
-        "connection": objBob["connection"],
-        "sender": objUser["did"],
+    gSender.sign_share_secret({
+        "did_receiver": objBob["did"],
+        "did_sender": objUser["did"],
         "encoded_condition": secret_c,
         "iteration": secret_i
     })
@@ -130,6 +103,11 @@ def post_share():
 
     return render_template('shared_with.html')
 
+@app.route('/accept_vc', methods=['GET'])
+def accept_vc():
+    ## list all VCs
+    aVC=gReceiver.get_all_pending_creds()
+    return render_template('accept_vc.html', aVC=aVC)
 
 @app.route('/decode_as_sender')
 def decode_as_sender():

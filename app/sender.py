@@ -125,7 +125,7 @@ class Sender:
             return _condition
         
         ## if we do not hav e it, then from VC
-        vc=self.get_credential_for_iteration(_i)
+        vc=identus.get_credential_for_iteration(_i)
         if vc!=None:
             return vc["claims"]["condition"]
         return None
@@ -133,30 +133,6 @@ class Sender:
 ##
 ## creds
 ##
-
-    def get_credential_for_thid(self, _thid):
-        try:
-            dataOfferedToHolder=identus.getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records?thid="+_thid)
-        
-            ## we should have only one offer in the array
-            for item in dataOfferedToHolder["contents"]:
-                if item["thid"] == _thid:
-                    return item
-            return None
-        except Exception as e:
-            return None
-
-    def get_credential_for_iteration(self, _i):
-        try:
-            dataOfferedToHolder=identus.getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records")
-        
-            ## we should have only one offer in the array
-            for item in dataOfferedToHolder["contents"]:
-                if item["claims"]["iteration"] == _i:
-                    return item
-            return None
-        except Exception as e:
-            return None
 
     # use this to issue encoded_condition into a VC for the sender (own use for decoding)
     def ensure_condition(self, objShare):
@@ -168,7 +144,7 @@ class Sender:
                 
                 ## we have an offer, and we are the one to receive, so we accept it right now
                 time.sleep(6)   ## shit identus delay
-                offeredToHolder=self.get_credential_for_thid(vcOffer["thid"])                
+                offeredToHolder=identus.get_credential_for_thid(vcOffer["thid"])                
 
                 if offeredToHolder== None:
                     raise Exception("Could not find RecordId") 
@@ -183,7 +159,7 @@ class Sender:
                 dataVCByIssuer=self.notary.issueVC(vcOffer["recordId"])
 
                 time.sleep(6)   ## shit identus delay
-                vcToHolder=self.get_credential_for_thid(vcOffer["thid"])                
+                vcToHolder=identus.get_credential_for_thid(vcOffer["thid"])                
                 return vcToHolder
 
             except Exception as e:
@@ -192,6 +168,9 @@ class Sender:
         return True
     
     def sign_share_secret(self, objShare):
+        vcOffer=self.notary.emitVCOffer(objShare)
+        if vcOffer==None:
+            return False
         return
 
 
@@ -217,8 +196,8 @@ class Sender:
 
         ## with VC? then we ask the Notary to issue a VC for ourself as sender (otherwise we will not be able to decode)
         cond=self.ensure_condition({
-            "connection": self.user["connection"],
-            "sender": self.user["did"],
+            "did_receiver": self.user["did"],
+            "did_sender": self.user["did"],
             "encoded_condition": encoded_condition,
             "iteration": self.iterations
         })

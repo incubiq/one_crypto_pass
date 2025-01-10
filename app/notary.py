@@ -12,8 +12,8 @@ class Notary:
     def __init__(self):
         self.aSecretParam=self.read_json_from_file()                    ## array of secret param  ## array of secret param  (timestamp, salt)
         self.encoder_decoder = EncoderDecoder()                ## a decoder engine
-        db=InMemDB()              
-        self.notary=db.getNotary()
+        self.db=InMemDB()              
+        self.notary=self.db.getNotary()
 
 ##
 ## DB
@@ -155,16 +155,19 @@ class Notary:
 
     def emitVCOffer(self, objShare) :
         objVC={
-            "sender" : objShare["sender"],
+            "sender" : objShare["did_sender"],
             "condition": objShare["encoded_condition"],
             "iteration": objShare["iteration"]
         }
 
         ## get comm channel for Notary - toDid
-        postTo=objShare["connection"]
-
+        receiver=self.db.getUserByDid(objShare["did_receiver"])
+        if receiver==None:
+            return None
+        
+        connection=receiver["connection"]
         dataOfferByIssuer= identus.async_createVCOfferWithoutSchema({
-            "connection": objShare["connection"],
+            "connection": connection,
             "validity": 3600000,
             "key": self.notary["entity"]["apiKey"],
             "author": self.notary["did"],

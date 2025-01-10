@@ -12,7 +12,11 @@
           <h2>Digital Identity</h2>
           <span>{{user.did}}</span>
         <br>
-        <br>
-        {% include '_partial_footer.html' %}
+        <br>        
+        {% if user.isSender %}
+          {% include '_partial_footer.html' %}
+        {% else %}
+          {% include '_partial_footer_receiver.html' %}
+        {% endif %}
   </body>
 </html>

@@ -73,3 +73,14 @@ class InMemDB:
 
     def getUsers(self): 
         return[AUTH_ALICE, AUTH_BOB]
+
+    def getUserByDid(self, _did):
+        if _did== AUTH_ALICE["did"]:
+            return AUTH_ALICE
+        
+        if _did== AUTH_BOB["did"]:
+            return AUTH_BOB
+        
+        if _did== AUTH_NOTARY["did"]:
+            return AUTH_NOTARY
+        return None

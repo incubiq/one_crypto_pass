@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% include '_partial_head.html' %}
+    <body onload="loadUserDataIntoForm()">
+        {% include '_partial_header.html' %}
+
+        <h1>List of VCs to Accept</h1>
+        {% if aVC %}
+            {% for item in aVC %}
+                <div>status: <b>{{item.protocolState}}</b></div>
+                <div>iteration: <b>{{item.claims.iteration}}</b></div>
+                <div>sender: <b>{{item.claims.sender}}</b></div>
+            {% endfor %}
+
+            <form action="/accept_vc" method="post">
+                            
+                <input type="hidden" id="did" name="did" >
+                <input type="hidden" id="username" name="username" required>
+                
+                <button style="display:block; margin-top:12px;" type="submit">Accept VC</button>
+            </form>
+        
+        {% else %}
+            <p>No new VC offered to you at this stage</p>
+        {% endif %}
+        {% include '_partial_footer_receiver.html' %}
+
+    </body>
+</html>

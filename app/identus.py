@@ -67,3 +67,27 @@ def async_createVCOfferWithoutSchema(objParam):
     
     except Exception as e:
         return None
+
+def get_credential_for_thid(self, _thid):
+    try:
+        dataOfferedToHolder=getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records?thid="+_thid)
+    
+        ## we should have only one offer in the array
+        for item in dataOfferedToHolder["contents"]:
+            if item["thid"] == _thid:
+                return item
+        return None
+    except Exception as e:
+        return None
+
+def get_credential_for_iteration(self, _i):
+    try:
+        dataOfferedToHolder=getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records")
+    
+        ## we should have only one offer in the array
+        for item in dataOfferedToHolder["contents"]:
+            if item["claims"]["iteration"] == _i:
+                return item
+        return None
+    except Exception as e:
+        return None

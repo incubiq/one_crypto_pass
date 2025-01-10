@@ -2,7 +2,7 @@
 <html lang="en">
     {% include '_partial_head.html' %}
     <body onload="loadUserDataIntoForm()">
-        {% include '_partial_header_bob.html' %}
+        {% include '_partial_header.html' %}
         <h1>Decode someone else's Secret</h1>
 
         <form action="/decoded_as_receiver" method="post" onsubmit="onDecode(event)" id="formDecode">
