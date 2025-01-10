@@ -57,9 +57,10 @@ def login():
 def auth():
     name = request.form.get('username', None)
     objAuth=gAuthenticator.authenticate(name)
+    gSender.set_user(objAuth)
     return render_template('auth.html', user={
         "name": objAuth["name"],
-        "addr": objAuth["addr"],
+        "addr": objAuth["wallet"]["id"],
         "did": objAuth["did"]
     })
 
@@ -71,15 +72,34 @@ def encode():
 def post_encode():
     _username = request.form.get('username', None)
     objUser=gAuthenticator.authenticate(_username)
-    _did = request.form.get('did', None)
     secret = request.form.get('secret', None)
     condition = request.form.get('condition', None)
     title = request.form.get('title', None)
+    hasVC = request.form.get('hasVC', None)
+
 
     # Encode the text
-    gSender.set_did(_did)
-    gSender.generate_passphrase(objUser["private"])
+    gSender.set_user(objUser)
+    gSender.set_with_vc(hasVC=="true")
+    gSender.generate_passphrase(objUser["wallet"]["private"])
     encoded_json = gSender.encode_secret(secret, condition)
+    if encoded_json==None:
+        return render_template('404.html', error={
+            "message": "Could not encode secret"
+        })
+    
+
+
+
+            # get offer record from holder point of view
+        return identus.simpleGet(objParam.key, "issue-credentials/records/"+dataRet["thid"]);
+
+        dataOfferedToHolder= async_getAllVCOffers({
+            key: objParam.keyPeer2,
+            thid: dataOfferByIssuer.data.thid
+        });
+
+
     return render_template('encoded.html', secret={
         "sa": base64.b64encode(encoded_json["sa"]).decode('utf-8'),         # salt
 #        "pass": encoded_json["pass"],                                       # passphrase
@@ -100,12 +120,12 @@ def post_share():
     secret_c = request.form.get('secret_c', None)
 
     gSender.share_condition({
-        "fromDid": objBob["did"],
-        "toDid": objUser["did"],
+        "connection": objBob["connection"],
+        "sender": objUser["did"],
         "encoded_condition": secret_c,
         "iteration": secret_i
     })
-    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
     gReceiver.set_passphrase(secret_pass)
 
     return render_template('shared_with.html')
@@ -131,13 +151,14 @@ def post_decode_as_sender():
     secret_c = request.form.get('secret_c', None)       ## if not in QR code, then found in VC
 
     # kept by sender (derived from priv key, does not need storage)
-    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["private"], secret_i)
-    secret_passCond=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_CONDITION(), objUser["private"], secret_i)
-    secret_sa=gSender.get_unique_token(gSender.TOKEN_SALT(), objUser["private"], secret_i)
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
+    secret_passCond=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_CONDITION(), objUser["wallet"]["private"], secret_i)
+    secret_sa=gSender.get_unique_token(gSender.TOKEN_SALT(), objUser["wallet"]["private"], secret_i)
 
     # user decode own secret?
     try:
-        decoded_condition = gSender.decode_secret(secret_c, {
+        encoded_condition = gSender.get_encoded_condition(secret_c, int(secret_i))
+        decoded_condition = gSender.decode_secret(encoded_condition, {
             "iterations": int(secret_i),
             "salt": secret_sa,
             "passphrase": secret_passCond,
@@ -148,7 +169,7 @@ def post_decode_as_sender():
             "iterations": int(secret_i),
             "salt": secret_sa,
             "passphrase": secret_pass,
-            "encoded_condition": secret_c
+            "encoded_condition": encoded_condition
         })        
 
         if decoded_json["decoded"] == None:

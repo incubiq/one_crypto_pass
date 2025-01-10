@@ -1,8 +1,10 @@
 ## ocp_notary
 
 from encoder import EncoderDecoder
+from inmem_db import InMemDB
 import base64
 import json
+import identus
 
 file_path = 'notary.txt'
 
@@ -10,6 +12,8 @@ class Notary:
     def __init__(self):
         self.aSecretParam=self.read_json_from_file()                    ## array of secret param  ## array of secret param  (timestamp, salt)
         self.encoder_decoder = EncoderDecoder()                ## a decoder engine
+        db=InMemDB()              
+        self.notary=db.getNotary()
 
 ##
 ## DB
@@ -145,20 +149,35 @@ class Notary:
                 return None            
         return None
     
-    def share_condition(self, objShare) :
-        self.emitVC(objShare)
-
 ##
 ## Verif Creds
 ##
 
-    def emitVC(self, objShare) :
-        ## objShare.fromDid
-        ## objShare.toDid
-        ## objShare.encoded_condition
-        ## objShare.iteration
-        return
+    def emitVCOffer(self, objShare) :
+        objVC={
+            "sender" : objShare["sender"],
+            "condition": objShare["encoded_condition"],
+            "iteration": objShare["iteration"]
+        }
 
+        ## get comm channel for Notary - toDid
+        postTo=objShare["connection"]
+
+        dataOfferByIssuer= identus.async_createVCOfferWithoutSchema({
+            "connection": objShare["connection"],
+            "validity": 3600000,
+            "key": self.notary["entity"]["apiKey"],
+            "author": self.notary["did"],
+            "claims": objVC
+        })
+
+        return dataOfferByIssuer
+
+    def issueVC(self, recordId) :
+        vc=identus.postIdentus(self.notary["entity"]["apiKey"], "issue-credentials/records/"+recordId+"/issue-credential", {
+        })
+        return vc
+    
 ##
 ## encode/decode secret
 ##

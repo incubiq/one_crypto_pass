@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+  <html lang="en">
+    {% include '_partial_head.html' %}
+    <body onload="loadUserDataIntoForm()">
+      {% include '_partial_header.html' %}
+      <h1>Error</h1>
+          <span>{{error.message}}</span>          
+        {% include '_partial_footer.html' %}
+  </body>
+</html>

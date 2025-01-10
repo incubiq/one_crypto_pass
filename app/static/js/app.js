@@ -63,18 +63,18 @@
     if(!objSecret || !objSecret.i || !objSecret.s) {return}
 
     const eltS_s=document.getElementById('secret_s');
-    if(eltS_s) {eltS_s.value=objSecret.s}
+    if(eltS_s && objSecret.s) {eltS_s.value=objSecret.s}
     const eltS_i=document.getElementById('secret_i');
-    if(eltS_i) {eltS_i.value=objSecret.i}
+    if(eltS_i && objSecret.i) {eltS_i.value=objSecret.i}
     const eltS_c=document.getElementById('secret_c');
-    if(eltS_c) {eltS_c.value=objSecret.c}
+    if(eltS_c && objSecret.c) {eltS_c.value=objSecret.c}
 
     let userTS = localStorage.getItem("userdata") || "[]";
     userTS=JSON.parse(userTS);
     let i=userTS.findIndex(function (x) {return x.i===objSecret.i});
     if(i!=-1) {
       const eltS_sa=document.getElementById('secret_sa');
-      if(eltS_sa) {eltS_sa.value=userTS[i].sa}  
+      if(eltS_sa && objSecret.sa) {eltS_sa.value=userTS[i].sa}  
     }
   }
   

@@ -9,6 +9,7 @@ from io import BytesIO
 
 from encoder import EncoderDecoder
 from notary import Notary
+import identus
 
 
 class Sender:
@@ -26,11 +27,14 @@ class Sender:
         self.encoder_decoder = EncoderDecoder()
         self.aSecretParam=[]         ## array of secret param  (timestamp, iterations, salt, encoded_condition)
 
-    def set_did(self, _did):
-        self.did=_did
+    def set_user(self, _user):
+        self.user=_user
     
     def get_notary(self):
         return self.notary
+    
+    def set_with_vc(self, bHasVC):
+        self.withVC=(bHasVC==True)
     
     def TOKEN_PASSPHRASE_FOR_SECRET (self): 
         return "token4secret" 
@@ -115,10 +119,81 @@ class Sender:
         if item!= None:
             item["encoded_condition"]=encoded_condition
 
-    # use this to share condition with sender and receiver 
-    def share_condition(self, objShare):
+    def get_encoded_condition(self, _condition, _i): 
+        ## where do we get the condition? if we have it, OK
+        if _condition!= "" and _condition!=None:
+            return _condition
+        
+        ## if we do not hav e it, then from VC
+        vc=self.get_credential_for_iteration(_i)
+        if vc!=None:
+            return vc["claims"]["condition"]
+        return None
+    
+##
+## creds
+##
+
+    def get_credential_for_thid(self, _thid):
+        try:
+            dataOfferedToHolder=identus.getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records?thid="+_thid)
+        
+            ## we should have only one offer in the array
+            for item in dataOfferedToHolder["contents"]:
+                if item["thid"] == _thid:
+                    return item
+            return None
+        except Exception as e:
+            return None
+
+    def get_credential_for_iteration(self, _i):
+        try:
+            dataOfferedToHolder=identus.getIdentus(self.user["entity"]["apiKey"], "issue-credentials/records")
+        
+            ## we should have only one offer in the array
+            for item in dataOfferedToHolder["contents"]:
+                if item["claims"]["iteration"] == _i:
+                    return item
+            return None
+        except Exception as e:
+            return None
+
+    # use this to issue encoded_condition into a VC for the sender (own use for decoding)
+    def ensure_condition(self, objShare):
         if self.withVC:
-            self.notary.share_condition(objShare)
+            try:
+                vcOffer=self.notary.emitVCOffer(objShare)
+                if vcOffer==None:
+                    return False
+                
+                ## we have an offer, and we are the one to receive, so we accept it right now
+                time.sleep(6)   ## shit identus delay
+                offeredToHolder=self.get_credential_for_thid(vcOffer["thid"])                
+
+                if offeredToHolder== None:
+                    raise Exception("Could not find RecordId") 
+
+                ## sender accepts this offer (with its own recordId)
+                time.sleep(6)   ## shit identus delay
+                dataAcceptedByHolder = identus.postIdentus(self.user["entity"]["apiKey"], "issue-credentials/records/"+offeredToHolder["recordId"]+"/accept-offer", {
+                    "subjectId": self.user["did"]
+                })
+
+                ## now ask notary to issue the VC
+                dataVCByIssuer=self.notary.issueVC(vcOffer["recordId"])
+
+                time.sleep(6)   ## shit identus delay
+                vcToHolder=self.get_credential_for_thid(vcOffer["thid"])                
+                return vcToHolder
+
+            except Exception as e:
+                return False
+             
+        return True
+    
+    def sign_share_secret(self, objShare):
+        return
+
 
 ##
 ## secrets
@@ -135,18 +210,20 @@ class Sender:
         })
 
         ## share did, iteration and salt with notary
-        self.notary.set_salt_for_iteration (self.did, self.iterations, self.salt)       
+        self.notary.set_salt_for_iteration (self.user["did"], self.iterations, self.salt)       
 
         #ask the notary to encode the condition (notary must be able to accept / refuse condition)
-        encoded_condition=self.notary.encode_condition(self.did, plain_text_condition, self.iterations, self.passphraseForCondition) 
+        encoded_condition=self.notary.encode_condition(self.user["did"], plain_text_condition, self.iterations, self.passphraseForCondition) 
 
         ## with VC? then we ask the Notary to issue a VC for ourself as sender (otherwise we will not be able to decode)
-        self.share_condition({
-            "fromDid": self.did,
-            "toDid": self.did,
+        cond=self.ensure_condition({
+            "connection": self.user["connection"],
+            "sender": self.user["did"],
             "encoded_condition": encoded_condition,
             "iteration": self.iterations
         })
+        if cond==False:
+            return None
 
         encoded=self.encoder_decoder.encode(plain_text_secret, {
             "passphrase": self.passphraseForSecret,
@@ -174,7 +251,7 @@ class Sender:
             "f": objQRSecret["filename"], ## file image of qrcode
             "e": objQRSecret["encoded"],  ## content of the qrcode,
         }
-    
+        
     def decode_secret(self, encoded, param):
         try:
             item=self.get_param_from_iteration(param["iterations"])
@@ -182,8 +259,10 @@ class Sender:
                 raise Exception("No incoming params") 
             
             encoded_condition = None
-            if param and "encoded_condition" in param:
+                    
+            if param and "encoded_condition" in param:                
                 encoded_condition=param["encoded_condition"]
+
             else :
                 if item and "encoded_condition" in item:
                     encoded_condition=item["encoded_condition"]
@@ -238,7 +317,9 @@ class Sender:
         )
 
         # Add data to the QR Code
-        encoded='{"s": "'+str(objS['s'])+'", "c": "'+str(objS['c'])+'", "i": '+str(objS['i'])+'}'
+        encoded='{"s": "'+str(objS['s'])+'", "i": '+str(objS['i'])+'}'
+        if self.withVC==False:
+            encoded='{"s": "'+str(objS['s'])+'", "c": "'+str(objS['c'])+'", "i": '+str(objS['i'])+'}'
         qr.add_data(encoded)
         qr.make(fit=True)
 
