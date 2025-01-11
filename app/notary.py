@@ -158,8 +158,9 @@ class Notary:
             "sender" : objShare["did_sender"],
             "condition": objShare["encoded_condition"],
             "iteration": objShare["iteration"],
-            "title": objShare["title"]
         }
+        if "title" in objShare: 
+            objVC["title"]=objShare["title"]
 
         ## get comm channel for Notary - toDid
         receiver=self.db.getUserByDid(objShare["did_receiver"])
@@ -204,12 +205,13 @@ class Notary:
                 }
 
             ## condition is met, notary can decode the secret
-            decoded=self.encoder_decoder.decode(encoded, {
+            objDecodeParam={
                 "passphrase": param["passphrase"],
                 "extra": param["encoded_condition"],
                 "iterations": param["iterations"],                 
                 "salt" : self._get_salt_for_iteration(param["iterations"]) 
-            })
+            }
+            decoded=self.encoder_decoder.decode(encoded, objDecodeParam)
 
             if decoded==None:
                 raise Exception("Could not decode") 

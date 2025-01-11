@@ -156,7 +156,7 @@ class Sender:
                 })
 
                 ## now ask notary to issue the VC
-                dataVCByIssuer=self.notary.issueVC(vcOffer["recordId"])
+                dataVCByIssuer=self.notary.issueVCWithRecordId(vcOffer["recordId"])
 
                 time.sleep(6)   ## shit identus delay
                 vcToHolder=identus.get_credential_for_thid(self.user, vcOffer["thid"])                
@@ -264,13 +264,14 @@ class Sender:
                     passphrase=item["passphrase"]
 
             # get the condition
-
-            decoded=self.encoder_decoder.decode(encoded, {
+            objDecodeParam={
                 "passphrase": passphrase,
                 "extra": encoded_condition,
                 "iterations": param["iterations"],                 
                 "salt" : salt
-            })
+            }
+
+            decoded=self.encoder_decoder.decode(encoded, objDecodeParam)
             if decoded==None:
                 raise Exception("Could not decode") 
             

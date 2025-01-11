@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% include '_partial_head.html' %}
+    <body onload="loadUserDataIntoForm()">
+        {% include '_partial_header.html' %}
+        <h1>Decoded Secret</h1>
+        <br />
+        <div>Encoded: {{secret.encoded}}</div>
+        <br />
+        <div>Decoded: <b>{{secret.decoded}}</b></div>
+        <br />
+        <div>Condition: <b>{{secret.condition}}</b></div>
+    <br>
+    <br>
+    {% include '_partial_footer_receiver.html' %}
+    </body>
+</html>

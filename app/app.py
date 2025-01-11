@@ -91,18 +91,38 @@ def post_encode():
         "i": encoded_json["i"],     # iteration
         "e": encoded_json["e"],     # content of the qrcode
         "q": encoded_json["q"],     # qrcode
-        "t": title                  # display title
+        "t": title,                 # display title
+        "hasVC": hasVC              # needs a VC?
     })
 
 ##
 ## sharing
 ##
+
 @app.route('/share')
 def share():
     return render_template('share.html')
 
-@app.route('/share', methods=['POST'])
-def post_share():
+@app.route('/share_no_vc', methods=['POST'])
+def post_share_no_vc():
+    objUser=authenticate(request)
+    secret_i = request.form.get('secret_i', None)
+    secret_t = request.form.get('secret_t', None)
+    
+    if secret_i=="":
+         return render_template('share.html')
+
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
+    gReceiver.set_passphrase(secret_pass)
+    return render_template('shared_with.html', shared={
+        "hasVC": False,
+        "title": secret_t,
+        "passphrase":secret_pass,
+        "did_sender": objUser["did"]
+    })
+
+@app.route('/share_with_vc', methods=['POST'])
+def post_share_with_vc():
     objUser=authenticate(request)
     secret_i = request.form.get('secret_i', None)
     secret_c = request.form.get('secret_c', None)
@@ -111,17 +131,23 @@ def post_share():
     ## get Bob's DID
     objBob=gAuthenticator.authenticate("Bob")
 
+    if secret_i=="":
+         return render_template('share.html')
+
+    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
+    gReceiver.set_passphrase(secret_pass)
     gSender.sign_share_secret({
         "did_receiver": objBob["did"],
         "did_sender": objUser["did"],
         "encoded_condition": secret_c,
-        "iteration": secret_i,
+        "iteration": int(secret_i),
         "title": secret_t
     })
-    secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
-    gReceiver.set_passphrase(secret_pass)
-
-    return render_template('shared_with.html')
+    return render_template('shared_with.html', shared={
+        "hasVC": True,
+        "title": secret_t,
+        "passphrase":secret_pass
+    })
 
 @app.route('/accept_vc', methods=['GET'])
 def accept_vc():
@@ -133,9 +159,9 @@ def accept_vc():
 def post_accept_vc():
     objUser=authenticate(request)
 
-    secret_i = request.form.get('secret_i', None)
-    gReceiver.accept_vc_offer(secret_i)
-    return render_template('accepted_vc.html')
+    secret_i = int(request.form.get('secret_i', None))
+    vc=gReceiver.accept_vc_offer(secret_i)
+    return render_template('accepted_vc.html', vc=vc)
 
 ##
 ## decoding
@@ -183,13 +209,13 @@ def post_decode_as_sender():
         if decoded_json["decoded"] == None:
             raise Exception("Could not decode") 
         
-        return render_template('decoded.html', secret={
+        return render_template('decoded_as_sender.html', secret={
             "encoded":  secret_s,
             "decoded": decoded_json["decoded"],
             "condition": decoded_condition["decoded"]
         })
     except Exception as e:
-        return render_template('decoded.html', secret={
+        return render_template('decoded_as_sender.html', secret={
             "encoded":  secret_s,
             "decoded": "COULD NOT DECODE"
         })
@@ -206,14 +232,16 @@ def post_decode_as_receiver():
 
     # known by the receiver
     did_sender = request.form.get('did_sender', None)
-    passphrase=gReceiver.get_passphrase(),
+    passphrase = request.form.get('passphrase', None) 
+    if passphrase=='':
+        passphrase=gReceiver.get_passphrase(),
 
     # receiver decode sender secret
     try:
-        gReceiver.set_encoded_condition(secret_c)
         decoded_json = gReceiver.decode_secret(secret_s, {
             "notary": gSender.get_notary(),  
             "iterations": int(secret_i),
+            "condition": secret_c,
             "passphrase": passphrase,
             "did_sender": did_sender
         })
@@ -221,14 +249,14 @@ def post_decode_as_receiver():
         if decoded_json["decoded"] == None:
             raise Exception("Could not decode") 
 
-        return render_template('decoded.html', secret={
+        return render_template('decoded_as_receiver.html', secret={
             "encoded":  secret_s,
             "decoded": decoded_json["decoded"],
             "condition": "Fulfilled"
         })
     
     except Exception as e:
-        return render_template('decoded.html', secret={
+        return render_template('decoded_as_receiver.html', secret={
             "encoded":  secret_s,
             "decoded": "COULD NOT DECODE",
             "condition": "NOT YOUR BUSINESS"

@@ -4,8 +4,18 @@
     <body onload="loadUserDataIntoForm()">
         {% include '_partial_header.html' %}
 
-        <h1>Bob received notification</h1>
-        <p>Bob needs to accept the offer for receiving a right to decode, based on condition to be fulfiled</p>
+        {% if shared.hasVC %}
+            <h1>Bob received a notification</h1>
+            <p>Tell Bob that needs to accept the offer for receiving a right to decode, based on condition to be fulfiled</p>
+            <p>Bob will also need this passphrase to request decoding your secret: <b>{{shared.passphrase}}</b></p>
+
+        {% else %}
+
+            <h1>Give this to Bob</h1>
+            <p>Sender DID: <b>{{shared.did_sender}}</b></p>
+            <p>Passphrase: <b>{{shared.passphrase}}</b></p>
+            <p>Bob will need both the sender DID and the passphrase to request decoding your secret, but he will also need to wait for the conditions to occur (those conditions are not known to Bob)</p>
+        {% endif %}
 
         {% include '_partial_footer.html' %}
     </body>

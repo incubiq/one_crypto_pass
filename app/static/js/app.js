@@ -12,8 +12,6 @@
     if(eltUsername) {eltUsername.value = _username;}
     let eltDid=document.getElementById("did");
     if(eltDid) {eltDid.value = _did;}
-    let eltDidSender=document.getElementById("did_sender");
-    if(eltDidSender) {eltDidSender.value = _did;}
     let eltDisplayDid=document.getElementById("displayDid");
     if(eltDisplayDid) {eltDisplayDid.innerHTML = _did;}
   }
@@ -42,12 +40,15 @@
     if(eltS_c) {secret_c = eltS_c.value;}
     const eltS_t=document.getElementById('secret_t');
     if(eltS_t) {secret_title = eltS_t.innerHTML;}
+    const eltS_hasVC=document.getElementById('hasVC');
+    if(eltS_hasVC) {hasVC = eltS_hasVC.value;}
 
     let objTS={
       sa: secret_sa,
       i: parseInt(secret_i),
       c: secret_c,
-      t: secret_title
+      t: secret_title,
+      hasVC: hasVC
     }
 
     let userTS = localStorage.getItem("userdata") || "[]";
@@ -73,6 +74,8 @@
     if(eltS_c && objSecret.c) {eltS_c.value=objSecret.c}
     const eltS_t=document.getElementById('secret_t');
     if(eltS_t && objSecret.t) {eltS_t.value=objSecret.t}
+    const eltS_hasVC=document.getElementById('hasVC');
+    if(eltS_hasVC) {eltS_hasVC.value=objSecret.hasVC==true}
 
     let userTS = localStorage.getItem("userdata") || "[]";
     userTS=JSON.parse(userTS);
@@ -97,7 +100,7 @@
         itemDiv.style.marginBottom = "10px";
 
         const itemTitle = document.createElement("div");
-        itemTitle.textContent = (item.t? item.t: "no title") + " ";
+        itemTitle.textContent = (item.t? item.t: "no title") + " "+(item.c? "(does not require a VC to decode)": "(requires a VC to decode)");
         itemTitle.style.display = "inline-flex"; 
         itemTitle.style.marginRight = "10px"; // Add spacing between text and button
 
@@ -106,16 +109,30 @@
         itemBtn.style.display = "inline-flex"; // Add styling (optional)
         itemBtn.style.margin = "5px 10px";
 
+        // Set data-* attributes on the button
+        itemBtn.setAttribute("data-i", item.i || "");
+        itemBtn.setAttribute("data-c", item.c || "");
+        itemBtn.setAttribute("data-t", item.t || "");
+        itemBtn.setAttribute("data-vc", item.hasVC || "");
+
+
         // Add an onClick listener to populate the form
-        itemBtn.addEventListener("click", () => {
+        const form = document.getElementById("idShare");
+        itemBtn.addEventListener("click", (evt) => {
           const eltS_i = document.getElementById("secret_i")
           const eltS_c = document.getElementById("secret_c")
           const eltS_t = document.getElementById("secret_t")
+          const eltS_vc = document.getElementById("hasVC")
           const eltS_sel = document.getElementById("selected-item")
-          eltS_i.value = item.i; 
-          eltS_c.value = item.c; 
-          eltS_t.value = item.t;           
-          eltS_sel.value = item.t;           
+           
+          // Access the data-* attributes from the clicked button
+          const button = evt.target;
+          eltS_i.value = button.getAttribute("data-i");
+          eltS_c.value = button.getAttribute("data-c");
+          eltS_t.value = button.getAttribute("data-t");
+          eltS_vc.value = button.getAttribute("data-vc");
+          eltS_sel.value = button.getAttribute("data-t");
+          form.setAttribute("action", (eltS_vc.value==true || eltS_vc.value=="true")? "/share_with_vc": "/share_no_vc");
         });
 
         // Append the span and button to the parent div
@@ -161,6 +178,9 @@
       let objSecret=null;
       if(eltSecret) {
         objSecret=JSON.parse(eltSecret.value);
+        if(objSecret.c==undefined) {
+          objSecret.hasVC=true;
+        }
         loadSecretKeysIntoForm(objSecret)
         
         // Submit the form

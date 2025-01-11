@@ -4,7 +4,7 @@
     <body onload="loadUserDataIntoForm()">
         {% include '_partial_header.html' %}
 
-        <p>You just accepted a new VC. You will be able to decode the secret when the conditions are met</p>
+        <p>You just accepted a new VC <b>({{vc.claims.title}})</b>. You will be able to decode the secret when the conditions are met</p>
 
         {% include '_partial_footer_receiver.html' %}
 

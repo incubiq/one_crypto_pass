@@ -56,13 +56,20 @@ class Receiver:
 ## decode secret
 ##
 
-    def set_encoded_condition(self, condition):
-        self.encoded_condition=condition
-
     def decode_secret(self, encoded, param):
+        ## get the encoded condition fromn the vc
+        condition=param["condition"]
+        did_sender=param["did_sender"]
+        if condition=="":
+            offeredToHolder=identus.get_credential_for_iteration(self.user, param["iterations"])      
+            if offeredToHolder==None: 
+                return None
+            condition=offeredToHolder["claims"]["condition"]
+            did_sender=offeredToHolder["claims"]["sender"]
+
         return param["notary"].decode_secret(encoded, {
             "passphrase": param["passphrase"],
-            "encoded_condition": self.encoded_condition,
-            "did_sender": param["did_sender"],
+            "encoded_condition": condition,
+            "did_sender": did_sender,
             "iterations": param["iterations"],
         })

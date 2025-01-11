@@ -10,21 +10,14 @@
         <img src="data:image/png;base64,{{secret.q}}" alt="QR Code Secret">
         <br>
         <span id="secret_e">{{secret.e}}</span>
-        <br>
 
-        <h2>Share with someone?</h2>
-        <form action="/share" method="post">
-            <input type="hidden" id="secret_i" name="secret_i" value={{secret.i}} />
-            <input type="hidden" id="secret_c" name="secret_c" value={{secret.c}} />
-            <input type="hidden" id="username" name="username" required>
-            <label style="display:block; margin-top:12px;" for="condition">Share with:</label>
-            <input type="text" id="sentto" name="sentto" value="Bob" required>
-            <button style="display:block; margin-top:12px;" type="submit">Share Now</button>
-        </form>
-
+        
+        <input type="hidden" id="secret_i" name="secret_i" value={{secret.i}} />
+        <input type="hidden" id="secret_c" name="secret_c" value={{secret.c}} />
         <input type="hidden" id="secret_sa" value={{secret.sa}} />
-        <input type="hidden" id="secret_c" value={{secret.c}} />
-
+        <input type="hidden" id="username" name="username" required>
+        <input type="hidden" id="hasVC" name="hasVC" value={{secret.hasVC}} />
+    
         {% include '_partial_footer.html' %}
     </body>
 </html>
