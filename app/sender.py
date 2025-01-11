@@ -125,7 +125,7 @@ class Sender:
             return _condition
         
         ## if we do not hav e it, then from VC
-        vc=identus.get_credential_for_iteration(_i)
+        vc=identus.get_credential_for_iteration(self.user, _i)
         if vc!=None:
             return vc["claims"]["condition"]
         return None
@@ -144,7 +144,7 @@ class Sender:
                 
                 ## we have an offer, and we are the one to receive, so we accept it right now
                 time.sleep(6)   ## shit identus delay
-                offeredToHolder=identus.get_credential_for_thid(vcOffer["thid"])                
+                offeredToHolder=identus.get_credential_for_thid(self.user, vcOffer["thid"])                
 
                 if offeredToHolder== None:
                     raise Exception("Could not find RecordId") 
@@ -159,7 +159,7 @@ class Sender:
                 dataVCByIssuer=self.notary.issueVC(vcOffer["recordId"])
 
                 time.sleep(6)   ## shit identus delay
-                vcToHolder=identus.get_credential_for_thid(vcOffer["thid"])                
+                vcToHolder=identus.get_credential_for_thid(self.user, vcOffer["thid"])                
                 return vcToHolder
 
             except Exception as e:
@@ -173,6 +173,9 @@ class Sender:
             return False
         return
 
+    def notify_accepted_vc(self, did_receiver, objVC):
+        ## the receiver has accepted the VC offer for our secret, we tell the notary to issue the VC
+        self.notary.issueVCWithThid(objVC["thid"])
 
 ##
 ## secrets

@@ -28,26 +28,37 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
+##
+## login
+##
+
+def authenticate(_request) :
+    name = _request.form.get('username', None)
+    objAuth=gAuthenticator.authenticate(name)
+    objAuth["isSender"]= objAuth["name"]=="Alice"
+    if objAuth["isSender"]:
+        gSender.set_user(objAuth)
+    else:
+        gReceiver.set_user(objAuth)
+    return objAuth
+
 @app.route('/login')
 def login():
     return render_template('login.html')
 
 @app.route('/auth', methods=['POST'])
 def auth():
-    name = request.form.get('username', None)
-    objAuth=gAuthenticator.authenticate(name)
-    isSender= objAuth["name"]=="Alice"
-    if isSender:
-        gSender.set_user(objAuth)
-    else:
-        gReceiver.set_user(objAuth)
-
+    objUser=authenticate(request)
     return render_template('auth.html', user={
-        "isSender": isSender,
-        "name": objAuth["name"],
-        "addr": objAuth["wallet"]["id"],
-        "did": objAuth["did"]
+        "isSender": objUser["isSender"],
+        "name": objUser["name"],
+        "addr": objUser["wallet"]["id"],
+        "did": objUser["did"]
     })
+
+##
+## encoding
+##
 
 @app.route('/encode')
 def encode():
@@ -55,8 +66,8 @@ def encode():
 
 @app.route('/encode', methods=['POST'])
 def post_encode():
-    _username = request.form.get('username', None)
-    objUser=gAuthenticator.authenticate(_username)
+    objUser=authenticate(request)
+
     secret = request.form.get('secret', None)
     condition = request.form.get('condition', None)
     title = request.form.get('title', None)
@@ -64,7 +75,6 @@ def post_encode():
 
 
     # Encode the text
-    gSender.set_user(objUser)
     gSender.set_with_vc(hasVC=="true")
     gSender.generate_passphrase(objUser["wallet"]["private"])
     encoded_json = gSender.encode_secret(secret, condition)
@@ -84,19 +94,29 @@ def post_encode():
         "t": title                  # display title
     })
 
+##
+## sharing
+##
+@app.route('/share')
+def share():
+    return render_template('share.html')
+
 @app.route('/share', methods=['POST'])
 def post_share():
-    _username = request.form.get('username', None)
-    objUser=gAuthenticator.authenticate(_username)
-    objBob=gAuthenticator.authenticate("Bob")
+    objUser=authenticate(request)
     secret_i = request.form.get('secret_i', None)
     secret_c = request.form.get('secret_c', None)
+    secret_t = request.form.get('secret_t', None)
+    
+    ## get Bob's DID
+    objBob=gAuthenticator.authenticate("Bob")
 
     gSender.sign_share_secret({
         "did_receiver": objBob["did"],
         "did_sender": objUser["did"],
         "encoded_condition": secret_c,
-        "iteration": secret_i
+        "iteration": secret_i,
+        "title": secret_t
     })
     secret_pass=gSender.get_unique_token(gSender.TOKEN_PASSPHRASE_FOR_SECRET(), objUser["wallet"]["private"], secret_i)
     gReceiver.set_passphrase(secret_pass)
@@ -109,6 +129,18 @@ def accept_vc():
     aVC=gReceiver.get_all_pending_creds()
     return render_template('accept_vc.html', aVC=aVC)
 
+@app.route('/accept_vc', methods=['POST'])
+def post_accept_vc():
+    objUser=authenticate(request)
+
+    secret_i = request.form.get('secret_i', None)
+    gReceiver.accept_vc_offer(secret_i)
+    return render_template('accepted_vc.html')
+
+##
+## decoding
+##
+
 @app.route('/decode_as_sender')
 def decode_as_sender():
     return render_template('decode_as_sender.html')
@@ -119,9 +151,7 @@ def decode_as_receiver():
 
 @app.route('/decoded_as_sender', methods=['POST'])
 def post_decode_as_sender():
-    _username = request.form.get('username', None)
-    _did = request.form.get('did', None)
-    objUser=gAuthenticator.authenticate(_username)
+    objUser=authenticate(request)
 
     # found in the QR code
     secret_s = request.form.get('secret_s', None)
@@ -167,6 +197,7 @@ def post_decode_as_sender():
 
 @app.route('/decoded_as_receiver', methods=['POST'])
 def post_decode_as_receiver():
+    objUser=authenticate(request)
 
     # found in the QR code
     secret_s = request.form.get('secret_s', None)

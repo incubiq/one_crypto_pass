@@ -6,7 +6,7 @@
 
         <h1>Encode Text</h1>
 
-        <form action="/encode" method="post">
+        <form action="/encode" method="post" id="idEncode" onsubmit="signTransaction(event, 'idEncode')">
             <label  style="display:block; margin-top:12px;" for="title">Name of the secret (not stored):</label>
             <input type="text" id="title" name="title" required>
 

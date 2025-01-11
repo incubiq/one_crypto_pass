@@ -5,6 +5,7 @@
         {% include '_partial_header.html' %}
         <h1>Decode your own Secret</h1>
 
+        <h2 id="secret_t" name="secret_t"></h2>
         <form action="/decoded_as_sender" method="post" onsubmit="onDecode(event)" id="formDecode">
             <label for="secret">Secret:</label>
             <input type="text" id="secret" name="secret" required>

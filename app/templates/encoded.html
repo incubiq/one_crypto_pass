@@ -5,7 +5,7 @@
     <body onload="loadUserDataIntoForm(); saveSecretKeysToLocalStore()">
         {% include '_partial_header.html' %}
 
-        <h1>{{secret.t}}</h1>
+        <h1 id="secret_t" name="secret_t">{{secret.t}}</h1>
         <h2>Secret + condition</h2>
         <img src="data:image/png;base64,{{secret.q}}" alt="QR Code Secret">
         <br>

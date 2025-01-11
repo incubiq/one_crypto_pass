@@ -157,7 +157,8 @@ class Notary:
         objVC={
             "sender" : objShare["did_sender"],
             "condition": objShare["encoded_condition"],
-            "iteration": objShare["iteration"]
+            "iteration": objShare["iteration"],
+            "title": objShare["title"]
         }
 
         ## get comm channel for Notary - toDid
@@ -176,11 +177,17 @@ class Notary:
 
         return dataOfferByIssuer
 
-    def issueVC(self, recordId) :
-        vc=identus.postIdentus(self.notary["entity"]["apiKey"], "issue-credentials/records/"+recordId+"/issue-credential", {
-        })
+    def issueVCWithRecordId(self, recordId) :
+        vc=identus.postIdentus(self.notary["entity"]["apiKey"], "issue-credentials/records/"+recordId+"/issue-credential", {})
         return vc
-    
+
+    def issueVCWithThid(self, thid) :
+        offer=identus.get_credential_for_thid(self.notary, thid)
+        if offer:
+            vc=identus.postIdentus(self.notary["entity"]["apiKey"], "issue-credentials/records/"+offer["recordId"]+"/issue-credential", {})
+            return vc
+        return None
+
 ##
 ## encode/decode secret
 ##

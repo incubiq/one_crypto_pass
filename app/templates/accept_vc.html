@@ -7,19 +7,30 @@
         <h1>List of VCs to Accept</h1>
         {% if aVC %}
             {% for item in aVC %}
+                {% if item.protocolState=="OfferReceived" %}
+
                 <div>status: <b>{{item.protocolState}}</b></div>
-                <div>iteration: <b>{{item.claims.iteration}}</b></div>
+                <div>title: <b>{{item.claims.title}}</b></div>
                 <div>sender: <b>{{item.claims.sender}}</b></div>
+                <button 
+                    style="margin-top:12px;" 
+                    onClick='onAcceptVC(event, {{ item.claims|tojson|safe }})'
+                >
+                    Accept VC
+                </button>
+
+                {% endif %}
             {% endfor %}
 
-            <form action="/accept_vc" method="post">
-                            
+            <form action="/accept_vc" method="post" id="idAcceptVC"">
+                                
+                <input type="hidden" id="secret_i" name="secret_i" value="">
                 <input type="hidden" id="did" name="did" >
                 <input type="hidden" id="username" name="username" required>
                 
-                <button style="display:block; margin-top:12px;" type="submit">Accept VC</button>
+                <button style="display:none; margin-top:12px;" type="submit">Accept VC</button>
             </form>
-        
+    
         {% else %}
             <p>No new VC offered to you at this stage</p>
         {% endif %}

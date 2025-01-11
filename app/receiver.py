@@ -1,12 +1,14 @@
 ## ocp_receiver
 import time
 import identus
+from sender import Sender
 
 class Receiver:
     def __init__(self):
         self.passphrase = None
         self.encoded_condition=None
         self.User=None
+        self.sender = Sender()                              ## our notary
 
     def set_user(self, _user):
         self.user=_user
@@ -30,7 +32,7 @@ class Receiver:
     def accept_vc_offer(self, iteration):
         try:
             ## we have an offer, and we are the one to receive, so we accept it right now
-            offeredToHolder=identus.get_credential_for_iteration(iteration)                
+            offeredToHolder=identus.get_credential_for_iteration(self.user, iteration)                
             if offeredToHolder== None:
                 raise Exception("Could not find RecordId") 
 
@@ -38,7 +40,10 @@ class Receiver:
             dataAcceptedByHolder = identus.postIdentus(self.user["entity"]["apiKey"], "issue-credentials/records/"+offeredToHolder["recordId"]+"/accept-offer", {
                 "subjectId": self.user["did"]
             })
-            return dataAcceptedByHolder
+
+            time.sleep(6)   ## shit identus delay
+            self.sender.notify_accepted_vc(self.user["did"], offeredToHolder)
+            return offeredToHolder        
 
         except Exception as e:
             return False             

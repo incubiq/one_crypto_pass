@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% include '_partial_head.html' %}
+    
+    <body onload="loadUserDataIntoForm(); getAllSecretsFromSender()">
+        {% include '_partial_header.html' %}
+
+        <h2>List of shareable secrets</h2>
+        <div id="list-of-secrets" name="list-of-secrets">
+            None
+        </div>
+
+        <h2>Share selected secret with Bob</h2>
+        <form action="/share" method="post" id="idShare" onsubmit="signTransaction(event, 'idShare')">
+            <label for="selected-item">Selected Item:</label>
+            <input type="text" id="selected-item" name="selected-item" readonly>
+
+            <input type="hidden" id="secret_i" name="secret_i"  />
+            <input type="hidden" id="secret_c" name="secret_c"  />
+            <input type="hidden" id="secret_t" name="secret_t"  />
+            <input type="hidden" id="username" name="username" required>
+            <label style="display:block; margin-top:12px;" for="condition">Share with:</label>
+            <input type="text" id="sentto" name="sentto" value="Bob" required>
+            <button style="display:block; margin-top:12px;" type="submit">Share Now</button>
+        </form>
+
+        {% include '_partial_footer.html' %}
+    </body>
+</html>
