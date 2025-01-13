@@ -161,7 +161,9 @@ def post_accept_vc():
 
     secret_i = int(request.form.get('secret_i', None))
     vc=gReceiver.accept_vc_offer(secret_i)
-    return render_template('accepted_vc.html', vc=vc)
+    if vc!=False:
+        return render_template('accepted_vc.html', vc=vc)
+    return render_template('rejected_vc.html')
 
 ##
 ## decoding

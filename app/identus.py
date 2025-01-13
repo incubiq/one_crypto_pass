@@ -86,7 +86,7 @@ def get_credential_for_iteration(_user, _i):
     
         ## we should have only one offer in the array
         for item in dataOfferedToHolder["contents"]:
-            if item["claims"]["iteration"] == _i:
+            if "iteration" in item["claims"] and item["claims"]["iteration"] == _i:
                 return item
         return None
     except Exception as e:
