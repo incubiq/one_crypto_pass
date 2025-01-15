@@ -33,7 +33,7 @@ This is currently a research project where Digital Identities and Verifiable Cre
 
     M3 delivered, see here https://milestones.projectcatalyst.io/projects/1200085/milestones/3
 
-    Final Clouseout report: https://github.com/incubiq/one_crypto_pass/blob/main
+    Final Clouseout report: https://github.com/incubiq/one_crypto_pass/blob/main/1200085%20-%20closing%20report.pdf
 
 ## Support
 
