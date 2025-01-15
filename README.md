@@ -17,6 +17,7 @@ This is currently a research project where Digital Identities and Verifiable Cre
  - M1: Proof that Identus is fit for purpose: [30min video] https://www.youtube.com/watch?v=4DyPuZr_3PA
  - M1: Conclusion / final chosen design: [11min video] https://www.youtube.com/watch?v=3rv1MJzEXGY
  - M2: A PoC with live demo: [17min video] https://youtu.be/M4DpnHqJjOk
+ - M3: The closing report: [5min video] https://youtu.be/WvPxJf8VHbk
 
 
 ## Links to test scripts
@@ -30,7 +31,9 @@ This is currently a research project where Digital Identities and Verifiable Cre
     
     M2 delivered, see here https://milestones.projectcatalyst.io/projects/1200085/milestones/2
 
+    M3 delivered, see here https://milestones.projectcatalyst.io/projects/1200085/milestones/3
 
+    Final Clouseout report: https://github.com/incubiq/one_crypto_pass/blob/main
 
 ## Support
 
